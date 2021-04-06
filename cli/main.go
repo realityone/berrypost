@@ -1,9 +1,11 @@
 package main
 
 import (
-	"fmt"
+	"github.com/realityone/berrypost/pkg/server"
 )
 
 func main() {
-	fmt.Println("Hello world")
+	// debug server
+	server := server.New()
+	server.Serve()
 }
