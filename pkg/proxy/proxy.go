@@ -3,7 +3,6 @@ package proxy
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"strings"
 	"sync"
 
@@ -27,7 +26,7 @@ type clientSet struct {
 type Server struct {
 	*grpc.Server
 
-	resolver   RuntimeResolver
+	resolver   RuntimeServiceResolver
 	protoStore RuntimeProtoStore
 
 	clientLock sync.RWMutex
@@ -88,10 +87,9 @@ func (s *Server) client(ctx *Context, service string) (*clientSet, error) {
 		return cli, nil
 	}
 
-	md, _ := metadata.FromIncomingContext(ctx)
-	target, ok := targetFromMetadata(md)
-	if !ok {
-		target = fmt.Sprintf("mitm-proxy://%s/", service)
+	target, err := s.resolver.ResolveOnce(ctx, service)
+	if err != nil {
+		return nil, err
 	}
 
 	newCC, err := grpc.DialContext(ctx, target, grpc.WithBlock(), grpc.WithInsecure())
@@ -121,10 +119,10 @@ func (s *Server) Handler(ctx *Context) error {
 		return grpc.Errorf(codes.FailedPrecondition, err.Error())
 	}
 
-	logrus.Infof("Handler: service: %+v: method: %+v", service, method)
+	logrus.Debugf("Handler: service: %+v: method: %+v", service, method)
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok {
-		logrus.Infof("In coming metadata: %+v", md)
+		logrus.Debugf("In coming metadata: %+v", md)
 	}
 
 	cli, err := s.client(ctx, service)
@@ -132,7 +130,7 @@ func (s *Server) Handler(ctx *Context) error {
 		return err
 	}
 
-	req, reply, err := resolveInOutMessage(cli.rcc, service, method)
+	req, reply, err := s.protoStore.GetMethodMessage(ctx, service, method)
 	if err != nil {
 		return err
 	}
@@ -150,7 +148,7 @@ func (s *Server) Handler(ctx *Context) error {
 	if err := stream.SendMsg(reply); err != nil {
 		return err
 	}
-	logrus.Infof("Request: %+v, Reply: %+v", req, reply)
+	logrus.Debugf("Request: %+v, Reply: %+v", req, reply)
 	return nil
 }
 
@@ -174,8 +172,8 @@ func wrapped(handler func(*Context) error) grpc.StreamHandler {
 	}
 }
 
-// NewServer is
-func NewServer() *Server {
+// New is
+func New() *Server {
 	server := &Server{
 		clients: map[string]*clientSet{},
 	}
@@ -196,12 +194,4 @@ func splitServiceMethod(serviceMethod string) (string, string, error) {
 	service := serviceMethod[:pos]
 	method := serviceMethod[pos+1:]
 	return service, method, nil
-}
-
-func targetFromMetadata(md metadata.MD) (string, bool) {
-	target := md.Get("x-mitm-target")
-	if len(target) <= 0 {
-		return "", false
-	}
-	return target[rand.Intn(len(target))], true
 }

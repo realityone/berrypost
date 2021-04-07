@@ -7,5 +7,14 @@ service BerryPostProtoStore {
   rpc GetProto(GetProtoRequest) returns (GetProtoResponse);
 }
 
-message GetProtoRequest {}
-message GetProtoResponse {}
+message GetProtoRequest {
+  string service = 1;
+  string method = 2;
+}
+
+message GetProtoResponse { repeated ProtoFile files = 1; }
+
+message ProtoFile {
+  string name = 1;
+  bytes content = 2;
+}

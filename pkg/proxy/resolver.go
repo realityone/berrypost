@@ -2,6 +2,6 @@ package proxy
 
 import "context"
 
-type RuntimeResolver interface {
-	Resolve(context.Context, string) (string, error)
+type RuntimeServiceResolver interface {
+	ResolveOnce(context.Context, string) (string, error)
 }

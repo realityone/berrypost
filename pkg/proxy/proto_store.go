@@ -1,7 +1,11 @@
 package proxy
 
-import "context"
+import (
+	"context"
+
+	"github.com/golang/protobuf/proto"
+)
 
 type RuntimeProtoStore interface {
-	GetProto(context.Context) ([]byte, error)
+	GetMethodMessage(context.Context, string, string) (proto.Message, proto.Message, error)
 }

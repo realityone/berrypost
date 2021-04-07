@@ -6,12 +6,14 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/realityone/berrypost/pkg/proxy"
 	"github.com/sirupsen/logrus"
 )
 
 type Server struct {
 	*mux.Router
 	management *Management
+	proxy      *proxy.Server
 }
 
 func New() *Server {
@@ -19,6 +21,7 @@ func New() *Server {
 	server := &Server{
 		Router:     router,
 		management: &Management{},
+		proxy:      proxy.New(),
 	}
 	server.setupRouter()
 	return server
