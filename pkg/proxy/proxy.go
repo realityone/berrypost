@@ -2,12 +2,9 @@ package proxy
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"sync"
 
-	"github.com/gogo/protobuf/proto"
-	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/grpcreflect"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -15,6 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	rpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
+	"google.golang.org/grpc/status"
 )
 
 type clientSet struct {
@@ -31,52 +29,6 @@ type Server struct {
 
 	clientLock sync.RWMutex
 	clients    map[string]*clientSet
-}
-
-type dummyMessage struct {
-	payload []byte
-}
-
-func (dm *dummyMessage) Reset()                   { dm.payload = dm.payload[:0] }
-func (dm *dummyMessage) String() string           { return fmt.Sprintf("%q", dm.payload) }
-func (dm *dummyMessage) ProtoMessage()            {}
-func (dm *dummyMessage) Marshal() ([]byte, error) { return dm.payload, nil }
-func (dm *dummyMessage) Unmarshal(in []byte) error {
-	dm.payload = append(dm.payload[:0], in...)
-	return nil
-}
-
-func resolveInOutMessage(rcc *grpcreflect.Client, serviceName string, methodName string) (proto.Message, proto.Message, error) {
-	type resolver func() (proto.Message, proto.Message, error)
-
-	byReflect := func() (proto.Message, proto.Message, error) {
-		serviceDesc, err := rcc.ResolveService(serviceName)
-		if err != nil {
-			return nil, nil, errors.WithStack(err)
-		}
-		for _, method := range serviceDesc.GetMethods() {
-			if method.GetName() != methodName {
-				continue
-			}
-			tInput := method.GetInputType()
-			tOutput := method.GetOutputType()
-			return dynamic.NewMessage(tInput), dynamic.NewMessage(tOutput), nil
-		}
-		return nil, nil, errors.Errorf("service %q method %q not found by reflect server", serviceName, methodName)
-	}
-	byLocalProto := func() (proto.Message, proto.Message, error) {
-		return nil, nil, errors.New("unimplement")
-	}
-
-	for _, resolv := range []resolver{byReflect, byLocalProto} {
-		in, out, err := resolv()
-		if err != nil {
-			logrus.Debugf("Failed to resolve method in out message: %+v", err)
-			continue
-		}
-		return in, out, nil
-	}
-	return &dummyMessage{}, &dummyMessage{}, nil
 }
 
 func (s *Server) client(ctx *Context, service string) (*clientSet, error) {
@@ -116,7 +68,7 @@ func (s *Server) client(ctx *Context, service string) (*clientSet, error) {
 func (s *Server) Handler(ctx *Context) error {
 	service, method, err := splitServiceMethod(ctx.ServiceMethod())
 	if err != nil {
-		return grpc.Errorf(codes.FailedPrecondition, err.Error())
+		return status.Errorf(codes.FailedPrecondition, err.Error())
 	}
 
 	logrus.Debugf("Handler: service: %+v: method: %+v", service, method)
@@ -156,7 +108,7 @@ func wrapped(handler func(*Context) error) grpc.StreamHandler {
 	return func(srv interface{}, stream grpc.ServerStream) error {
 		serviceMethod, ok := grpc.MethodFromServerStream(stream)
 		if !ok {
-			return grpc.Errorf(codes.Internal, "failed to get method from stream")
+			return status.Errorf(codes.Internal, "failed to get method from stream")
 		}
 		ctx := &Context{
 			Context:       stream.Context(),
