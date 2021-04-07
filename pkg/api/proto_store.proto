@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package berrypost.v1;
+option go_package = "api";
+
+service BerryPostProtoStore {
+  rpc GetProto(GetProtoRequest) returns (GetProtoResponse);
+}
+
+message GetProtoRequest {}
+message GetProtoResponse {}
