@@ -3,7 +3,7 @@ package proxy
 import (
 	"context"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 )
 
