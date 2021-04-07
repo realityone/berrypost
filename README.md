@@ -1,3 +1,1 @@
-# berrypost
-
-![ICON](./icon.svg)
+# ![ICON](./berrypost.svg) berrypost
