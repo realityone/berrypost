@@ -175,7 +175,9 @@ func wrapped(handler func(*Context) error) grpc.StreamHandler {
 // New is
 func New() *Server {
 	server := &Server{
-		clients: map[string]*clientSet{},
+		resolver:   &defaultRuntimeServiceResolver{},
+		protoStore: &defaultRuntimeProtoStore{},
+		clients:    map[string]*clientSet{},
 	}
 	server.Server = grpc.NewServer(
 		grpc.UnknownServiceHandler(wrapped(server.Handler)),
