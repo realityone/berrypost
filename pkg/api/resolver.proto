@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package berrypost.v1;
+option go_package = "api";
+
+service BerryPostResolver {
+  rpc ResolveOnce(ResolveOnceRequest) returns (ResolveOnceResponse);
+}
+
+message ResolveOnceRequest { string name = 1; }
+message ResolveOnceResponse { repeated string addrs = 1; }
