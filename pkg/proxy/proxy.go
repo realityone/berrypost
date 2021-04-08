@@ -20,8 +20,10 @@ type clientSet struct {
 	rcc *grpcreflect.Client
 }
 
-// Server is
-type Server struct {
+type ServerOpt func(*ProxyServer)
+
+// ProxyServer is
+type ProxyServer struct {
 	*grpc.Server
 
 	resolver   RuntimeServiceResolver
@@ -31,15 +33,15 @@ type Server struct {
 	clients    map[string]*clientSet
 }
 
-func (s *Server) client(ctx *Context, service string) (*clientSet, error) {
-	s.clientLock.RLock()
-	cli, ok := s.clients[service]
-	s.clientLock.RUnlock()
+func (ps *ProxyServer) client(ctx *Context, service string) (*clientSet, error) {
+	ps.clientLock.RLock()
+	cli, ok := ps.clients[service]
+	ps.clientLock.RUnlock()
 	if ok {
 		return cli, nil
 	}
 
-	target, err := s.resolver.ResolveOnce(ctx, service)
+	target, err := ps.resolver.ResolveOnce(ctx, service)
 	if err != nil {
 		return nil, err
 	}
@@ -48,9 +50,9 @@ func (s *Server) client(ctx *Context, service string) (*clientSet, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.clientLock.Lock()
-	defer s.clientLock.Unlock()
-	cli, ok = s.clients[service]
+	ps.clientLock.Lock()
+	defer ps.clientLock.Unlock()
+	cli, ok = ps.clients[service]
 	if ok {
 		logrus.Debugf("Already has established connection for %q", service)
 		newCC.Close()
@@ -60,12 +62,12 @@ func (s *Server) client(ctx *Context, service string) (*clientSet, error) {
 		cc:  newCC,
 		rcc: grpcreflect.NewClient(context.Background(), rpb.NewServerReflectionClient(newCC)),
 	}
-	s.clients[service] = newCliSet
+	ps.clients[service] = newCliSet
 	return newCliSet, nil
 }
 
 // Handler is
-func (s *Server) Handler(ctx *Context) error {
+func (ps *ProxyServer) Handler(ctx *Context) error {
 	service, method, err := splitServiceMethod(ctx.ServiceMethod())
 	if err != nil {
 		return status.Errorf(codes.FailedPrecondition, err.Error())
@@ -77,12 +79,12 @@ func (s *Server) Handler(ctx *Context) error {
 		logrus.Debugf("In coming metadata: %+v", md)
 	}
 
-	cli, err := s.client(ctx, service)
+	cli, err := ps.client(ctx, service)
 	if err != nil {
 		return err
 	}
 
-	req, reply, err := s.protoStore.GetMethodMessage(ctx, service, method)
+	req, reply, err := ps.protoStore.GetMethodMessage(ctx, service, method)
 	if err != nil {
 		return err
 	}
@@ -125,16 +127,19 @@ func wrapped(handler func(*Context) error) grpc.StreamHandler {
 }
 
 // New is
-func New() *Server {
-	server := &Server{
+func New(opts ...ServerOpt) *ProxyServer {
+	ps := &ProxyServer{
 		resolver:   &defaultRuntimeServiceResolver{},
 		protoStore: &defaultRuntimeProtoStore{},
 		clients:    map[string]*clientSet{},
 	}
-	server.Server = grpc.NewServer(
-		grpc.UnknownServiceHandler(wrapped(server.Handler)),
+	ps.Server = grpc.NewServer(
+		grpc.UnknownServiceHandler(wrapped(ps.Handler)),
 	)
-	return server
+	for _, opt := range opts {
+		opt(ps)
+	}
+	return ps
 }
 
 func splitServiceMethod(serviceMethod string) (string, string, error) {
@@ -148,4 +153,16 @@ func splitServiceMethod(serviceMethod string) (string, string, error) {
 	service := serviceMethod[:pos]
 	method := serviceMethod[pos+1:]
 	return service, method, nil
+}
+
+func SetResolver(in RuntimeServiceResolver) ServerOpt {
+	return func(s *ProxyServer) {
+		s.resolver = in
+	}
+}
+
+func SetProtoStore(in RuntimeProtoStore) ServerOpt {
+	return func(s *ProxyServer) {
+		s.protoStore = in
+	}
 }

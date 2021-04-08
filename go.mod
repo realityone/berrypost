@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/gogo/protobuf v1.3.2
+	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/jhump/protoreflect v1.8.2
 	github.com/pkg/errors v0.9.1

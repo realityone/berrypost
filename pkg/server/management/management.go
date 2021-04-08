@@ -1,4 +1,4 @@
-package server
+package management
 
 import (
 	"encoding/json"
@@ -21,6 +21,6 @@ func (m Management) intro(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(introSchema)
 }
 
-func (m Management) SetupRoute(in *mux.Route) {
+func (m Management) SetupRoute(in *mux.Router) {
 	in.Path("/api/_intro").Methods("GET").HandlerFunc(m.intro)
 }
