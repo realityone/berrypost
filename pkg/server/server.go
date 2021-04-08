@@ -31,7 +31,7 @@ func New() *Server {
 
 func (s *Server) Serve() {
 	srv := &http.Server{
-		Handler:      s.wrappedHandler(),
+		Handler:      s.WrappedHandler(),
 		Addr:         "127.0.0.1:8000",
 		WriteTimeout: 1 * time.Second,
 		ReadTimeout:  1 * time.Second,
@@ -40,7 +40,7 @@ func (s *Server) Serve() {
 	logrus.Fatal(srv.ListenAndServe())
 }
 
-func (s *Server) wrappedHandler() http.Handler {
+func (s *Server) WrappedHandler() http.Handler {
 	out := handlers.CombinedLoggingHandler(logrus.StandardLogger().Out, s.Router)
 	out = handlers.CORS()(out)
 	out = handlers.RecoveryHandler(handlers.PrintRecoveryStack(true))(out)
