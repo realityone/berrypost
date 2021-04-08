@@ -12,18 +12,34 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type Option func(*ServerConfig)
+type ServerConfig struct {
+	ProxyOptions []proxy.ServerOpt
+}
+
+func SetProxyOptions(in []proxy.ServerOpt) Option {
+	return func(sc *ServerConfig) {
+		sc.ProxyOptions = in
+	}
+}
+
 type Server struct {
 	*mux.Router
 	management *management.Management
 	proxy      *proxy.ProxyServer
 }
 
-func New() *Server {
+func New(opts ...Option) *Server {
+	cfg := &ServerConfig{}
+	for _, opt := range opts {
+		opt(cfg)
+	}
+
 	router := mux.NewRouter()
 	server := &Server{
 		Router:     router,
 		management: &management.Management{},
-		proxy:      proxy.New(),
+		proxy:      proxy.New(cfg.ProxyOptions...),
 	}
 	server.setupRouter()
 	return server
