@@ -3,6 +3,8 @@ package proxy
 import (
 	"context"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
@@ -88,6 +90,18 @@ func (ps *ProxyServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func unmarshalJSONPB(r io.Reader, pb proto.Message) error {
+	unmarshaler, ok := pb.(jsonpb.JSONPBUnmarshaler)
+	if ok {
+		bytes, err := ioutil.ReadAll(r)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		return unmarshaler.UnmarshalJSONPB(&jsonpb.Unmarshaler{AllowUnknownFields: true}, bytes)
+	}
+	return jsonpb.Unmarshal(r, pb)
+}
+
 func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
 	service, method, err := splitServiceMethod(ctx.serviceMethod)
 	if err != nil {
@@ -103,7 +117,8 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := jsonpb.Unmarshal(ctx.req.Body, req); err != nil {
+
+	if err := unmarshalJSONPB(ctx.req.Body, req); err != nil {
 		return nil, errors.Errorf("Failed to unmarshal json to request message: %+v", err)
 	}
 	if err := cli.cc.Invoke(ctx, ctx.serviceMethod, req, reply); err != nil {
