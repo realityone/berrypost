@@ -2,30 +2,30 @@ package proxy
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 
-	"github.com/jhump/protoreflect/grpcreflect"
+	"github.com/gogo/protobuf/jsonpb"
+	"github.com/gogo/protobuf/proto"
+	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	rpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
-	"google.golang.org/grpc/status"
 )
 
+var pbMarshaler = &jsonpb.Marshaler{}
+
 type clientSet struct {
-	cc  *grpc.ClientConn
-	rcc *grpcreflect.Client
+	cc *grpc.ClientConn
 }
 
 type ServerOpt func(*ProxyServer)
 
 // ProxyServer is
+// TODO: treat as a real gRPC server.
 type ProxyServer struct {
-	*grpc.Server
-
 	resolver   RuntimeServiceResolver
 	protoStore RuntimeProtoStore
 
@@ -59,71 +59,61 @@ func (ps *ProxyServer) client(ctx *Context, service string) (*clientSet, error) 
 		return cli, nil
 	}
 	newCliSet := &clientSet{
-		cc:  newCC,
-		rcc: grpcreflect.NewClient(context.Background(), rpb.NewServerReflectionClient(newCC)),
+		cc: newCC,
 	}
 	ps.clients[service] = newCliSet
 	return newCliSet, nil
 }
 
-// Handler is
-func (ps *ProxyServer) Handler(ctx *Context) error {
-	service, method, err := splitServiceMethod(ctx.ServiceMethod())
-	if err != nil {
-		return status.Errorf(codes.FailedPrecondition, err.Error())
+func (ps *ProxyServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	ctx := &Context{
+		Context: context.Background(),
+		req:     req,
+		writer:  w,
 	}
 
-	logrus.Debugf("Handler: service: %+v: method: %+v", service, method)
-	md, ok := metadata.FromIncomingContext(ctx)
-	if ok {
-		logrus.Debugf("In coming metadata: %+v", md)
+	vars := mux.Vars(req)
+	service, method := vars["service"], vars["method"]
+	ctx.serviceMethod = fmt.Sprintf("/%s/%s", service, method)
+
+	reply, err := ps.Invoke(ctx)
+	if err != nil {
+		logrus.Errorf("Failed to invoke backend on method: %q: %+v", ctx.serviceMethod, err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err := pbMarshaler.Marshal(w, reply); err != nil {
+		logrus.Errorf("Failed to marshal reply on method: %q: %+v", ctx.serviceMethod, err)
+		return
+	}
+}
+
+func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
+	service, method, err := splitServiceMethod(ctx.serviceMethod)
+	if err != nil {
+		return nil, err
 	}
 
 	cli, err := ps.client(ctx, service)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	req, reply, err := ps.protoStore.GetMethodMessage(ctx, service, method)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	stream := ctx.ServerStream()
-	if err := stream.RecvMsg(req); err != nil {
-		return err
+	if err := jsonpb.Unmarshal(ctx.req.Body, req); err != nil {
+		return nil, errors.Errorf("Failed to unmarshal json to request message: %+v", err)
 	}
-	if err := cli.cc.Invoke(ctx, ctx.ServiceMethod(), req, reply); err != nil {
-		return err
+	if err := cli.cc.Invoke(ctx, ctx.serviceMethod, req, reply); err != nil {
+		return nil, err
 	}
-	if err := stream.SendHeader(md); err != nil {
-		return err
-	}
-	if err := stream.SendMsg(reply); err != nil {
-		return err
-	}
-	logrus.Debugf("Request: %+v, Reply: %+v", req, reply)
-	return nil
+	return reply, nil
 }
 
-func wrapped(handler func(*Context) error) grpc.StreamHandler {
-	return func(srv interface{}, stream grpc.ServerStream) error {
-		serviceMethod, ok := grpc.MethodFromServerStream(stream)
-		if !ok {
-			return status.Errorf(codes.Internal, "failed to get method from stream")
-		}
-		ctx := &Context{
-			Context:       stream.Context(),
-			srv:           srv,
-			serverStream:  stream,
-			serviceMethod: serviceMethod,
-		}
-		if err := handler(ctx); err != nil {
-			logrus.Errorf("Failed to handle request stream: method: %q: %+v", serviceMethod, err)
-			return err
-		}
-		return nil
-	}
+func (p *ProxyServer) SetupRoute(in *mux.Router) {
+	in.Path("/{service}/{method}").Methods("POST").Handler(p)
 }
 
 // New is
@@ -133,9 +123,6 @@ func New(opts ...ServerOpt) *ProxyServer {
 		protoStore: &defaultRuntimeProtoStore{},
 		clients:    map[string]*clientSet{},
 	}
-	ps.Server = grpc.NewServer(
-		grpc.UnknownServiceHandler(wrapped(ps.Handler)),
-	)
 	for _, opt := range opts {
 		opt(ps)
 	}

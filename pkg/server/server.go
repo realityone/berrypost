@@ -64,20 +64,31 @@ func (s *Server) WrappedHandler() http.Handler {
 	return out
 }
 
-func intro(w http.ResponseWriter, req *http.Request) {
+func (s *Server) intro(w http.ResponseWriter, req *http.Request) {
 	introSchema := struct {
-		Name    string `json:"name"`
-		Version string `json:"version"`
+		Name    string   `json:"name"`
+		Version string   `json:"version"`
+		Paths   []string `json:"paths"`
 	}{
 		Name:    "berrypost-server",
 		Version: "0.0.1",
 	}
+	s.Router.Walk(func(route *mux.Route, _ *mux.Router, _ []*mux.Route) error {
+		pathTemplate, err := route.GetPathTemplate()
+		if err != nil {
+			return err
+		}
+		introSchema.Paths = append(introSchema.Paths, pathTemplate)
+		return nil
+	})
 	json.NewEncoder(w).Encode(introSchema)
 }
 
 func (s *Server) setupRouter() {
-	s.PathPrefix("/berrypost").Methods("GET").Path("/api/_intro").HandlerFunc(intro)
+	s.PathPrefix("/berrypost").Methods("GET").Path("/api/_intro").HandlerFunc(s.intro)
+	// builtin components
 	s.management.SetupRoute(s.PathPrefix("/berrypost/management").Subrouter())
+	s.proxy.SetupRoute(s.PathPrefix("/berrypost/invoke").Subrouter())
 }
 
 func (s *Server) RegisterComponentAPI(component string, fn func(*mux.Router)) {
