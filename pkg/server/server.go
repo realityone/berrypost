@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -77,4 +78,8 @@ func intro(w http.ResponseWriter, req *http.Request) {
 func (s *Server) setupRouter() {
 	s.PathPrefix("/berrypost").Methods("GET").Path("/api/_intro").HandlerFunc(intro)
 	s.management.SetupRoute(s.PathPrefix("/berrypost/management").Subrouter())
+}
+
+func (s *Server) RegisterComponentAPI(component string, fn func(*mux.Router)) {
+	fn(s.PathPrefix(fmt.Sprintf("/berrypost/component/%s", component)).Subrouter())
 }
