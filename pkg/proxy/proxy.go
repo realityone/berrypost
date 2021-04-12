@@ -11,6 +11,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
+	"github.com/realityone/berrypost/pkg/protohelper"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
@@ -34,18 +35,22 @@ type ProxyServer struct {
 }
 
 func (ps *ProxyServer) client(ctx *Context, service string) (*clientSet, error) {
+	logrus.Debugf("Try to dial gRPC connection to service: %q", service)
 	ps.clientLock.RLock()
 	cli, ok := ps.clients[service]
 	ps.clientLock.RUnlock()
 	if ok {
+		logrus.Debugf("Got %q gRPC connection from client store", service)
 		return cli, nil
 	}
 
+	logrus.Debugf("Resolving service %q to dial gRPC connection", service)
 	target, err := ps.resolver.ResolveOnce(ctx, service)
 	if err != nil {
 		return nil, err
 	}
 
+	logrus.Debugf("Dial gRPC connection to service: %q", service)
 	newCC, err := grpc.DialContext(ctx, target, grpc.WithBlock(), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
@@ -54,10 +59,11 @@ func (ps *ProxyServer) client(ctx *Context, service string) (*clientSet, error) 
 	defer ps.clientLock.Unlock()
 	cli, ok = ps.clients[service]
 	if ok {
-		logrus.Debugf("Already has established connection for %q", service)
+		logrus.Debugf("Already has established connection for service: %q", service)
 		newCC.Close()
 		return cli, nil
 	}
+	logrus.Debugf("Put new gRPC connection to client store: %q", service)
 	newCliSet := &clientSet{
 		cc: newCC,
 	}
@@ -75,6 +81,7 @@ func (ps *ProxyServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	service, method := vars["service"], vars["method"]
 	ctx.serviceMethod = fmt.Sprintf("/%s/%s", service, method)
+	logrus.Debugf("Received gRPC call from http: %q", ctx.serviceMethod)
 
 	reply, err := ps.Invoke(ctx)
 	if err != nil {
@@ -103,6 +110,13 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
 	if err != nil {
 		return nil, err
 	}
+	logrus.DebugFn(func() []interface{} {
+		return []interface{}{
+			"Succeeded to get message type from proto store, request: %+v, reply: %+v",
+			protohelper.AsEmptyMessageJSON(req),
+			protohelper.AsEmptyMessageJSON(reply),
+		}
+	})
 
 	if err := jsonpb.Unmarshal(ctx.req.Body, req); err != nil {
 		return nil, errors.Errorf("Failed to unmarshal json to request message: %+v", err)
