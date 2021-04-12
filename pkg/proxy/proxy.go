@@ -112,9 +112,11 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
 	}
 	logrus.DebugFn(func() []interface{} {
 		return []interface{}{
-			"Succeeded to get message type from proto store, request: %+v, reply: %+v",
-			protohelper.AsEmptyMessageJSON(req),
-			protohelper.AsEmptyMessageJSON(reply),
+			fmt.Sprintf(
+				"Succeeded to get message type from proto store, request: %+v, reply: %+v",
+				protohelper.AsEmptyMessageJSON(req),
+				protohelper.AsEmptyMessageJSON(reply),
+			),
 		}
 	})
 
