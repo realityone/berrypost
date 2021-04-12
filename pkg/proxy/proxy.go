@@ -3,8 +3,6 @@ package proxy
 import (
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
@@ -12,26 +10,12 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/mux"
-	"github.com/jhump/protoreflect/dynamic"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
 var pbMarshaler = &jsonpb.Marshaler{}
-
-type dummyMessage struct {
-	payload []byte
-}
-
-func (dm *dummyMessage) Reset()                   { dm.payload = dm.payload[:0] }
-func (dm *dummyMessage) String() string           { return fmt.Sprintf("%q", dm.payload) }
-func (dm *dummyMessage) ProtoMessage()            {}
-func (dm *dummyMessage) Marshal() ([]byte, error) { return dm.payload, nil }
-func (dm *dummyMessage) Unmarshal(in []byte) error {
-	dm.payload = append(dm.payload[:0], in...)
-	return nil
-}
 
 type clientSet struct {
 	cc *grpc.ClientConn
@@ -104,16 +88,6 @@ func (ps *ProxyServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func unmarshalJSONPB(r io.Reader, pb proto.Message) error {
-	fmt.Printf("AAAAAAA: %T\n", pb)
-	dm := pb.(*dynamic.Message)
-	bytes, err := ioutil.ReadAll(r)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return dm.UnmarshalJSON(bytes)
-}
-
 func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
 	service, method, err := splitServiceMethod(ctx.serviceMethod)
 	if err != nil {
@@ -130,23 +104,13 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
 		return nil, err
 	}
 
-	if err := unmarshalJSONPB(ctx.req.Body, req); err != nil {
+	if err := jsonpb.Unmarshal(ctx.req.Body, req); err != nil {
 		return nil, errors.Errorf("Failed to unmarshal json to request message: %+v", err)
 	}
-	a,_:=proto.Marshal(req)
-	b,_:=proto.Marshal(reply)
-	fmt.Println(a,b)
 
-	dmReq := &dummyMessage{}
-	dmReply := &dummyMessage{}
-	dmReq.Unmarshal(a)
-	if err := cli.cc.Invoke(ctx, ctx.serviceMethod, dmReq, dmReply); err != nil {
+	if err := cli.cc.Invoke(ctx, ctx.serviceMethod, req, reply); err != nil {
 		return nil, err
 	}
-	fmt.Println(proto.Unmarshal(dmReply.payload, reply))
-	dmReply2:=reply.(*dynamic.Message)
-	aaa,_:=dmReply2.MarshalJSON()
-	fmt.Println(string(aaa))
 	return reply, nil
 }
 
