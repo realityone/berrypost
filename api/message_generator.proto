@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package berrypost.v1;
-option go_package = "api";
+option go_package = "./;api";
 
 service BerryPostMessageGenerator {
   rpc GenerateMessage(GenerateMessageRequest) returns (GenerateMessageResponse);
