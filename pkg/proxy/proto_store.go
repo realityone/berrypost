@@ -5,8 +5,8 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
-	"github.com/jhump/protoreflect/dynamic"
 	"github.com/pkg/errors"
+	"github.com/realityone/berrypost/pkg/protohelper"
 	"github.com/sirupsen/logrus"
 )
 
@@ -28,7 +28,7 @@ func (w wrappedAnyResolver) Resolve(typeURL string) (proto.Message, error) {
 	m, err := w.AnyResolver.Resolve(typeURL)
 	if err != nil {
 		logrus.Warnf("Failed to resolve type: %q, using dynamic message directly: %+v.", typeURL, err)
-		return &dynamic.Message{}, nil
+		return &protohelper.DummyMessage{}, nil
 	}
 	return m, nil
 }
@@ -36,5 +36,5 @@ func (w wrappedAnyResolver) Resolve(typeURL string) (proto.Message, error) {
 type emptyAnyResolver struct{}
 
 func (emptyAnyResolver) Resolve(typeURL string) (proto.Message, error) {
-	return &dynamic.Message{}, nil
+	return &protohelper.DummyMessage{}, nil
 }
