@@ -16,8 +16,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-var pbMarshaler = &jsonpb.Marshaler{}
-
 type clientSet struct {
 	cc *grpc.ClientConn
 }
@@ -27,8 +25,9 @@ type ServerOpt func(*ProxyServer)
 // ProxyServer is
 // TODO: treat as a real gRPC server.
 type ProxyServer struct {
-	resolver   RuntimeServiceResolver
-	protoStore RuntimeProtoStore
+	resolver        RuntimeServiceResolver
+	protoStore      RuntimeProtoStore
+	pbjsonMarshaler *jsonpb.Marshaler
 
 	clientLock sync.RWMutex
 	clients    map[string]*clientSet
@@ -89,7 +88,7 @@ func (ps *ProxyServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if err := pbMarshaler.Marshal(w, reply); err != nil {
+	if err := ps.pbjsonMarshaler.Marshal(w, reply); err != nil {
 		logrus.Errorf("Failed to marshal reply on method: %q: %+v", ctx.serviceMethod, err)
 		return
 	}
@@ -137,10 +136,20 @@ func (p *ProxyServer) SetupRoute(in *mux.Router) {
 // New is
 func New(opts ...ServerOpt) *ProxyServer {
 	ps := &ProxyServer{
-		resolver:   &defaultRuntimeServiceResolver{},
-		protoStore: &defaultRuntimeProtoStore{},
-		clients:    map[string]*clientSet{},
+		resolver:        &defaultRuntimeServiceResolver{},
+		protoStore:      &defaultRuntimeProtoStore{},
+		clients:         map[string]*clientSet{},
+		pbjsonMarshaler: &jsonpb.Marshaler{},
 	}
+	func() {
+		anyResolver, ok := ps.protoStore.(jsonpb.AnyResolver)
+		if !ok {
+			ps.pbjsonMarshaler.AnyResolver = emptyAnyResolver{}
+			return
+		}
+		logrus.Infof("Succeeded to cast proto store as jsonpb any resolver: %+v", anyResolver)
+		ps.pbjsonMarshaler.AnyResolver = wrappedAnyResolver{anyResolver}
+	}()
 	for _, opt := range opts {
 		opt(ps)
 	}
