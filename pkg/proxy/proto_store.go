@@ -27,9 +27,10 @@ type wrappedAnyResolver struct {
 func (w wrappedAnyResolver) Resolve(typeURL string) (proto.Message, error) {
 	m, err := w.AnyResolver.Resolve(typeURL)
 	if err != nil {
-		logrus.Warnf("Failed to resolve type: %q, using dynamic message directly: %+v.", typeURL, err)
+		logrus.Warnf("Failed to resolve type: %q, using dummy message directly: %+v.", typeURL, err)
 		return &protohelper.DummyMessage{}, nil
 	}
+	logrus.Infof("Succeeded to resolve type: %q: %+v", typeURL, m)
 	return m, nil
 }
 
