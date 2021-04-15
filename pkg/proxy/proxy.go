@@ -136,20 +136,13 @@ func (p *ProxyServer) SetupRoute(in *mux.Router) {
 // New is
 func New(opts ...ServerOpt) *ProxyServer {
 	ps := &ProxyServer{
-		resolver:        &defaultRuntimeServiceResolver{},
-		protoStore:      &defaultRuntimeProtoStore{},
-		clients:         map[string]*clientSet{},
-		pbjsonMarshaler: &jsonpb.Marshaler{},
+		resolver:   &defaultRuntimeServiceResolver{},
+		protoStore: &defaultRuntimeProtoStore{},
+		clients:    map[string]*clientSet{},
+		pbjsonMarshaler: &jsonpb.Marshaler{
+			AnyResolver: emptyAnyResolver{},
+		},
 	}
-	func() {
-		anyResolver, ok := ps.protoStore.(jsonpb.AnyResolver)
-		if !ok {
-			ps.pbjsonMarshaler.AnyResolver = emptyAnyResolver{}
-			return
-		}
-		logrus.Infof("Succeeded to cast proto store as jsonpb any resolver: %+v", anyResolver)
-		ps.pbjsonMarshaler.AnyResolver = wrappedAnyResolver{anyResolver}
-	}()
 	for _, opt := range opts {
 		opt(ps)
 	}
@@ -178,5 +171,11 @@ func SetResolver(in RuntimeServiceResolver) ServerOpt {
 func SetProtoStore(in RuntimeProtoStore) ServerOpt {
 	return func(s *ProxyServer) {
 		s.protoStore = in
+	}
+}
+
+func SetAnyResolver(in jsonpb.AnyResolver) ServerOpt {
+	return func(s *ProxyServer) {
+		s.pbjsonMarshaler.AnyResolver = wrappedAnyResolver{in}
 	}
 }
