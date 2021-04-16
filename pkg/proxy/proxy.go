@@ -25,9 +25,8 @@ type ServerOpt func(*ProxyServer)
 // ProxyServer is
 // TODO: treat as a real gRPC server.
 type ProxyServer struct {
-	resolver        RuntimeServiceResolver
-	protoStore      RuntimeProtoStore
-	pbjsonMarshaler *jsonpb.Marshaler
+	resolver   RuntimeServiceResolver
+	protoStore RuntimeProtoStore
 
 	clientLock sync.RWMutex
 	clients    map[string]*clientSet
@@ -88,7 +87,11 @@ func (ps *ProxyServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if err := ps.pbjsonMarshaler.Marshal(w, reply); err != nil {
+
+	marshaler := &jsonpb.Marshaler{
+		AnyResolver: AsContextedAnyResolver(ctx, ps.protoStore),
+	}
+	if err := marshaler.Marshal(w, reply); err != nil {
 		logrus.Errorf("Failed to marshal reply on method: %q: %+v", ctx.serviceMethod, err)
 		return
 	}
@@ -139,9 +142,6 @@ func New(opts ...ServerOpt) *ProxyServer {
 		resolver:   &defaultRuntimeServiceResolver{},
 		protoStore: &defaultRuntimeProtoStore{},
 		clients:    map[string]*clientSet{},
-		pbjsonMarshaler: &jsonpb.Marshaler{
-			AnyResolver: protohelper.EmptyAnyResolver{},
-		},
 	}
 	for _, opt := range opts {
 		opt(ps)
@@ -171,11 +171,5 @@ func SetResolver(in RuntimeServiceResolver) ServerOpt {
 func SetProtoStore(in RuntimeProtoStore) ServerOpt {
 	return func(s *ProxyServer) {
 		s.protoStore = in
-	}
-}
-
-func SetAnyResolver(in jsonpb.AnyResolver) ServerOpt {
-	return func(s *ProxyServer) {
-		s.pbjsonMarshaler.AnyResolver = protohelper.WrappedAnyResolver{AnyResolver: in}
 	}
 }
