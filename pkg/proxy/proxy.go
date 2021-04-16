@@ -140,7 +140,7 @@ func New(opts ...ServerOpt) *ProxyServer {
 		protoStore: &defaultRuntimeProtoStore{},
 		clients:    map[string]*clientSet{},
 		pbjsonMarshaler: &jsonpb.Marshaler{
-			AnyResolver: emptyAnyResolver{},
+			AnyResolver: protohelper.EmptyAnyResolver{},
 		},
 	}
 	for _, opt := range opts {
@@ -176,6 +176,6 @@ func SetProtoStore(in RuntimeProtoStore) ServerOpt {
 
 func SetAnyResolver(in jsonpb.AnyResolver) ServerOpt {
 	return func(s *ProxyServer) {
-		s.pbjsonMarshaler.AnyResolver = wrappedAnyResolver{in}
+		s.pbjsonMarshaler.AnyResolver = protohelper.WrappedAnyResolver{AnyResolver: in}
 	}
 }
