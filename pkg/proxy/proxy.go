@@ -75,8 +75,7 @@ func (ps *ProxyServer) ServeHTTP(ctx *gin.Context) {
 		writer:  ctx.Writer,
 	}
 
-	service := ctx.Value("service").(string)
-	method := ctx.Value("method").(string)
+	service, method := ctx.Param("service"), ctx.Param("method")
 	invokeCtx.serviceMethod = fmt.Sprintf("/%s/%s", service, method)
 	logrus.Debugf("Received gRPC call from http: %q", invokeCtx.serviceMethod)
 

@@ -69,8 +69,9 @@ func (s *Server) intro(ctx *gin.Context) {
 		Paths     []string `json:"paths"`
 		Component []string `json:"component"`
 	}{
-		Name:    "berrypost-server",
-		Version: "0.0.1",
+		Name:      "berrypost-server",
+		Version:   "0.0.1",
+		Component: s.component,
 	}
 	for _, r := range s.Engine.Routes() {
 		introSchema.Paths = append(introSchema.Paths, r.Path)
