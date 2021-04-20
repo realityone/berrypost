@@ -1,16 +1,18 @@
 package management
 
 import (
-	"encoding/json"
-	"net/http"
-
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 )
 
 type Management struct {
+	*gin.Engine
 }
 
-func (m Management) intro(w http.ResponseWriter, req *http.Request) {
+func New() *Management {
+	m := &Management{}
+	return m
+}
+func (m Management) intro(ctx *gin.Context) {
 	introSchema := struct {
 		Name    string `json:"name"`
 		Version string `json:"version"`
@@ -18,9 +20,14 @@ func (m Management) intro(w http.ResponseWriter, req *http.Request) {
 		Name:    "berrypost-management-server",
 		Version: "0.0.1",
 	}
-	json.NewEncoder(w).Encode(introSchema)
+	ctx.JSON(200, introSchema)
 }
 
-func (m Management) SetupRoute(in *mux.Router) {
-	in.Path("/api/_intro").Methods("GET").HandlerFunc(m.intro)
+func (m Management) SetupRoute(in gin.IRouter) {
+	in.GET("/api/_intro", m.intro)
+	in.GET("/hello", func(ctx *gin.Context) {
+		ctx.JSON(200, map[string]string{
+			"data": "hello",
+		})
+	})
 }

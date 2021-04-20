@@ -1,15 +1,14 @@
 package proxy
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strings"
 	"sync"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
-	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/realityone/berrypost/pkg/protohelper"
 	"github.com/sirupsen/logrus"
@@ -69,30 +68,30 @@ func (ps *ProxyServer) client(ctx *Context, service string) (*clientSet, error) 
 	return newCliSet, nil
 }
 
-func (ps *ProxyServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	ctx := &Context{
-		Context: context.Background(),
-		req:     req,
-		writer:  w,
+func (ps *ProxyServer) ServeHTTP(ctx *gin.Context) {
+	invokeCtx := &Context{
+		Context: ctx,
+		req:     ctx.Request,
+		writer:  ctx.Writer,
 	}
 
-	vars := mux.Vars(req)
-	service, method := vars["service"], vars["method"]
-	ctx.serviceMethod = fmt.Sprintf("/%s/%s", service, method)
-	logrus.Debugf("Received gRPC call from http: %q", ctx.serviceMethod)
+	service := ctx.Value("service").(string)
+	method := ctx.Value("method").(string)
+	invokeCtx.serviceMethod = fmt.Sprintf("/%s/%s", service, method)
+	logrus.Debugf("Received gRPC call from http: %q", invokeCtx.serviceMethod)
 
-	reply, err := ps.Invoke(ctx)
+	reply, err := ps.Invoke(invokeCtx)
 	if err != nil {
-		logrus.Errorf("Failed to invoke backend on method: %q: %+v", ctx.serviceMethod, err)
-		w.WriteHeader(http.StatusBadRequest)
+		logrus.Errorf("Failed to invoke backend on method: %q: %+v", invokeCtx.serviceMethod, err)
+		ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
 	marshaler := &jsonpb.Marshaler{
 		AnyResolver: AsContextedAnyResolver(ctx, ps.protoStore),
 	}
-	if err := marshaler.Marshal(w, reply); err != nil {
-		logrus.Errorf("Failed to marshal reply on method: %q: %+v", ctx.serviceMethod, err)
+	if err := marshaler.Marshal(ctx.Writer, reply); err != nil {
+		logrus.Errorf("Failed to marshal reply on method: %q: %+v", invokeCtx.serviceMethod, err)
 		return
 	}
 }
@@ -132,8 +131,8 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
 	return reply, nil
 }
 
-func (p *ProxyServer) SetupRoute(in *mux.Router) {
-	in.Path("/{service}/{method}").Methods("POST").Handler(p)
+func (p *ProxyServer) SetupRoute(in gin.IRouter) {
+	in.POST("/:service/:method", p.ServeHTTP)
 }
 
 // New is
