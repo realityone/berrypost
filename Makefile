@@ -13,12 +13,12 @@ dist:
 	npm run build && \
 	popd
 
-berrypost:
-	go build -o cli/berrypost cli/main.go
+berrypost-main:
+	go build -o berrypost/berrypost berrypost/main.go
 
-all: clean proto dist berrypost
+all: clean proto dist berrypost-main
 
 clean:
-	rm ./cli/berrypost ./cli/main
-	rm -rf ./api/*.pb.go
-	rm -rf ./statics/dist/*
+	rm -f ./berrypost/berrypost
+	rm -f ./api/*.pb.go
+	rm -f ./statics/dist/*
