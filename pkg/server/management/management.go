@@ -69,9 +69,9 @@ func (m Management) listServiceAlias(ctx *gin.Context) {
 }
 
 func (m Management) SetupRoute(in *gin.Engine) {
-	router := in.Group("/management")
-	router.GET("/_intro", m.intro)
-	router.GET("/packages", m.listPackages)
-	router.GET("/packages/:package_name", m.getPackage)
-	router.GET("/service-alias", m.listServiceAlias)
+	rAPI := in.Group("/management/api")
+	rAPI.GET("/_intro", m.intro)
+	rAPI.GET("/packages", m.listPackages)
+	rAPI.GET("/packages/:package_name", m.getPackage)
+	rAPI.GET("/service-alias", m.listServiceAlias)
 }
