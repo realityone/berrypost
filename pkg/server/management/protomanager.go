@@ -2,8 +2,11 @@ package management
 
 import (
 	"context"
+	"encoding/json"
 
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/jhump/protoreflect/desc"
+	"github.com/sirupsen/logrus"
 )
 
 type ProtoManager interface {
@@ -39,6 +42,24 @@ type ProtoPackageProfile struct {
 type ProtoPackage struct {
 	Meta           ProtoMeta            `json:"meta"`
 	FileDescriptor *desc.FileDescriptor `json:"file_descriptor"`
+}
+
+func (pp *ProtoPackage) MarshalJSON() ([]byte, error) {
+	marshalStruct := struct {
+		Meta           ProtoMeta
+		FileDescriptor json.RawMessage
+	}{
+		Meta: pp.Meta,
+	}
+
+	descMarshaler := jsonpb.Marshaler{}
+	descString, err := descMarshaler.MarshalToString(pp.FileDescriptor.AsProto())
+	if err != nil {
+		logrus.Warnf("Failed to marshal %+v as json string: %+v", err)
+	}
+	marshalStruct.FileDescriptor = json.RawMessage(descString)
+
+	return json.Marshal(marshalStruct)
 }
 
 type defaultProtoManager struct{}
