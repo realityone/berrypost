@@ -130,8 +130,8 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
 	return reply, nil
 }
 
-func (p *ProxyServer) SetupRoute(in gin.IRouter) {
-	in.POST("/:service/:method", p.ServeHTTP)
+func (p *ProxyServer) SetupRoute(in *gin.Engine) {
+	in.POST("/invoke/:service/:method", p.ServeHTTP)
 }
 
 // New is

@@ -5,7 +5,6 @@ import (
 )
 
 type Management struct {
-	*gin.Engine
 }
 
 func New() *Management {
@@ -23,8 +22,8 @@ func (m Management) intro(ctx *gin.Context) {
 	ctx.JSON(200, introSchema)
 }
 
-func (m Management) SetupRoute(in gin.IRouter) {
-	in.GET("/api/_intro", m.intro)
+func (m Management) SetupRoute(in *gin.Engine) {
+	in.GET("/management/api/_intro", m.intro)
 	in.GET("/hello", func(ctx *gin.Context) {
 		ctx.JSON(200, map[string]string{
 			"data": "hello",
