@@ -16,11 +16,6 @@
  * Base structure
  */
 
-body {
-  text-shadow: 0 .05rem .1rem rgba(0, 0, 0, .5);
-  box-shadow: inset 0 0 5rem rgba(0, 0, 0, .5);
-}
-
 .cover-container {
   max-width: 48em;
 }
@@ -29,6 +24,11 @@ body {
   max-width: 32em;
 }
 
+.main-icon {
+  width: 33px;
+  height: 33px;
+  content: url("../../../berrypost.svg");
+}
 
 /*
  * Header
@@ -37,7 +37,6 @@ body {
 .nav-masthead .nav-link {
   padding: .25rem 0;
   font-weight: 700;
-  color: rgba(255, 255, 255, .5);
   background-color: transparent;
   border-bottom: .25rem solid transparent;
 }
@@ -52,6 +51,6 @@ body {
 }
 
 .nav-masthead .active {
-  color: #fff;
-  border-bottom-color: #fff;
+  color: #000;
+  border-bottom-color: #000;
 }
