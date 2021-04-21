@@ -16,6 +16,9 @@ dist:
 berrypost-main:
 	go build -o berrypost/berrypost berrypost/main.go
 
+run: dist
+	go run berrypost/main.go
+
 all: clean proto dist berrypost-main
 
 clean:

@@ -22,6 +22,10 @@ body {
 }
 
 .cover-container {
+  max-width: 48em;
+}
+
+.lead-container {
   max-width: 32em;
 }
 
