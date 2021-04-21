@@ -8,7 +8,7 @@
   <script src="/assets/statics/dist/vendor.bundle.js"></script>
   <script src="/assets/statics/dist/index.bundle.js"></script>
 
-  <title>berrypost</title>
+  <title>{{ .Name }}</title>
 
   <style>
     .bd-placeholder-img {
@@ -32,7 +32,7 @@
     <header class="mb-auto">
       <div>
         <div class="float-md-start main-icon"></div>
-        <h3 class="float-md-start mb-0">berrypost</h3>
+        <h3 class="float-md-start mb-0">{{ .Name }}</h3>
         <nav class="nav nav-masthead justify-content-center float-md-end">
           <a class="nav-link active" aria-current="page" href="#">Home</a>
         </nav>
@@ -40,9 +40,9 @@
     </header>
 
     <main class="px-3">
-      <h1>berrypost</h1>
+      <h1>{{ .Name }}</h1>
       <div class="lead-container mx-auto">
-        <p class="lead">Berrypost is a simple gRPC service debugging tool, built for human beings.</p>
+        <p class="lead">{{ .Description }}</p>
       </div>
       <p class="lead">
         <a href="#" class="btn btn-lg btn-secondary fw-bold border-dark bg-white">Learn more</a>

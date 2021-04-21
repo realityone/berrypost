@@ -16,6 +16,7 @@ import (
 type Option func(*ServerConfig)
 type ServerConfig struct {
 	ProxyOptions []proxy.ServerOpt
+	Meta         ServerMeta
 }
 
 func SetProxyOptions(in []proxy.ServerOpt) Option {
@@ -24,16 +25,33 @@ func SetProxyOptions(in []proxy.ServerOpt) Option {
 	}
 }
 
+func SetServerMeta(in ServerMeta) Option {
+	return func(sc *ServerConfig) {
+		sc.Meta = in
+	}
+}
+
+type ServerMeta struct {
+	Name        string
+	Description string
+}
+
 type Server struct {
 	*gin.Engine
 	management *management.Management
 	proxy      *proxy.ProxyServer
 
 	component []string
+	meta      ServerMeta
 }
 
 func New(opts ...Option) *Server {
-	cfg := &ServerConfig{}
+	cfg := &ServerConfig{
+		Meta: ServerMeta{
+			Name:        "berrypost",
+			Description: "Berrypost is a simple gRPC service debugging tool, built for human beings.",
+		},
+	}
 	for _, opt := range opts {
 		opt(cfg)
 	}
@@ -44,6 +62,7 @@ func New(opts ...Option) *Server {
 		management: management.New(),
 		proxy:      proxy.New(cfg.ProxyOptions...),
 		component:  []string{},
+		meta:       cfg.Meta,
 	}
 
 	templ := template.Must(template.ParseFS(berrypost.TemplateFS, "statics/templates/*.html"))
@@ -82,7 +101,7 @@ func (s *Server) intro(ctx *gin.Context) {
 }
 
 func (s *Server) index(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "index.html", gin.H{})
+	ctx.HTML(http.StatusOK, "index.html", s.meta)
 }
 
 func (s *Server) setupRouter() {
