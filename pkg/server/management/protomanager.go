@@ -46,8 +46,8 @@ type ProtoPackage struct {
 
 func (pp *ProtoPackage) MarshalJSON() ([]byte, error) {
 	marshalStruct := struct {
-		Meta           ProtoMeta
-		FileDescriptor json.RawMessage
+		Meta           ProtoMeta       `json:"meta"`
+		FileDescriptor json.RawMessage `json:"file_descriptor"`
 	}{
 		Meta: pp.Meta,
 	}
