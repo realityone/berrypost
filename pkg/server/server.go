@@ -97,7 +97,7 @@ func (s *Server) intro(ctx *gin.Context) {
 	for _, r := range s.Engine.Routes() {
 		introSchema.Paths = append(introSchema.Paths, r.Path)
 	}
-	ctx.JSON(200, introSchema)
+	ctx.JSON(http.StatusOK, introSchema)
 }
 
 func (s *Server) index(ctx *gin.Context) {
