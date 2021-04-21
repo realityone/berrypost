@@ -10,6 +10,7 @@ proto:
 
 dist:
 	pushd ./statics && \
+	npm install && \
 	npm run build && \
 	popd
 
