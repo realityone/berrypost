@@ -24,5 +24,4 @@ all: clean proto dist berrypost-main
 
 clean:
 	rm -f ./berrypost/berrypost
-	rm -f ./api/*.pb.go
 	rm -f ./statics/dist/*
