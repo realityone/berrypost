@@ -15,8 +15,15 @@ import (
 
 type Option func(*ServerConfig)
 type ServerConfig struct {
-	ProxyOptions []proxy.ServerOpt
-	Meta         ServerMeta
+	ProxyOptions      []proxy.ServerOpt
+	ManagementOptions []management.Option
+	Meta              ServerMeta
+}
+
+func SetManagementOptions(in []management.Option) Option {
+	return func(sc *ServerConfig) {
+		sc.ManagementOptions = in
+	}
 }
 
 func SetProxyOptions(in []proxy.ServerOpt) Option {
@@ -59,7 +66,7 @@ func New(opts ...Option) *Server {
 	engine := gin.Default()
 	server := &Server{
 		Engine:     engine,
-		management: management.New(),
+		management: management.New(cfg.ManagementOptions...),
 		proxy:      proxy.New(cfg.ProxyOptions...),
 		component:  []string{},
 		meta:       cfg.Meta,
