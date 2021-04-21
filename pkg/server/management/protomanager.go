@@ -37,8 +37,8 @@ type ProtoPackageProfile struct {
 }
 
 type ProtoPackage struct {
-	Meta            ProtoMeta            `json:"meta"`
-	FileDescriptors *desc.FileDescriptor `json:"file_descriptors"`
+	Meta           ProtoMeta            `json:"meta"`
+	FileDescriptor *desc.FileDescriptor `json:"file_descriptor"`
 }
 
 type defaultProtoManager struct{}
