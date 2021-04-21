@@ -8,7 +8,7 @@ import (
 
 type ProtoManager interface {
 	ListPackages(context.Context) ([]*PackageMeta, error)
-	GetPackage(context.Context, *GetPackageRequest) (*ProtoPackage, error)
+	GetPackage(context.Context, *GetPackageRequest) (*ProtoPackageProfile, error)
 	ListServiceAlias(context.Context) ([]*ServiceAlias, error)
 }
 
@@ -31,10 +31,14 @@ type ProtoMeta struct {
 	ImportPath string `json:"import_path"`
 }
 
+type ProtoPackageProfile struct {
+	Common        Common          `json:"common"`
+	ProtoPackages []*ProtoPackage `json:"proto_packages"`
+}
+
 type ProtoPackage struct {
-	Meta           ProtoMeta            `json:"meta"`
-	Common         Common               `json:"common"`
-	FileDescriptor *desc.FileDescriptor `json:"file_descriptor"`
+	Meta            ProtoMeta            `json:"meta"`
+	FileDescriptors *desc.FileDescriptor `json:"file_descriptors"`
 }
 
 type defaultProtoManager struct{}
@@ -43,8 +47,8 @@ func (dpm defaultProtoManager) ListPackages(context.Context) ([]*PackageMeta, er
 	return []*PackageMeta{}, nil
 }
 
-func (dpm defaultProtoManager) GetPackage(context.Context, *GetPackageRequest) (*ProtoPackage, error) {
-	return &ProtoPackage{}, nil
+func (dpm defaultProtoManager) GetPackage(context.Context, *GetPackageRequest) (*ProtoPackageProfile, error) {
+	return &ProtoPackageProfile{}, nil
 }
 
 func (dpm defaultProtoManager) ListServiceAlias(context.Context) ([]*ServiceAlias, error) {
