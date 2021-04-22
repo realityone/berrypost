@@ -1,0 +1,38 @@
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+.navbar {
+    padding-top: .3rem;
+    padding-bottom: .3rem;
+}
+
+.status-bar {
+    height: 3rem;
+}
+
+.method-list > .list-group {
+    margin-bottom: 10px;
+    overflow: scroll;
+}
+
+.method-list {
+    padding-left: 0%;
+    padding-right: 0%;
+}
+
+.method-list > .list-group > .list-group-item {
+}
+
+.request-panel {
+
+}
+
+.CodeMirror {
+    font-size: 12px;
+}
+
+.response-panel {
+    
+}

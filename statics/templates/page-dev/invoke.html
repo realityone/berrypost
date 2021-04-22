@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="">
+    <title>berrypost</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="https://getbootstrap.com/docs/5.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://codemirror.net/lib/codemirror.css">
+
+    <style>
+        .bd-placeholder-img {
+            font-size: 1.125rem;
+            text-anchor: middle;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            user-select: none;
+        }
+
+        @media (min-width: 768px) {
+            .bd-placeholder-img-lg {
+                font-size: 3.5rem;
+            }
+        }
+    </style>
+
+
+    <!-- Custom styles for this template -->
+    <link href="navbar-top.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-md bg-white">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">berrypost</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
+                aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="navbar-nav ms-auto mb-2 mb-md-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="#">Home</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid status-bar bg-light">
+        <div class="row border-top border-bottom">
+            <div class="col-4"></div>
+
+            <div class="col-4 text-center border-start border-end">
+                <div class="w-100">
+                    Sent Invoke
+                    <span class="badge border border-success text-success float-end">200 OK</span>
+                </div>
+                <span></span>
+                <div style="font-size: 50%;" class="text-secondary">
+                    POST /invoke/hello.world.Service/Echo
+                </div>
+                <div style="height: 3px;" class="progress">
+                    <div class="progress-bar progress-bar-striped bg-success" role="progressbar" aria-valuenow="75"
+                        aria-valuemin="0" aria-valuemax="100" style="width: 75%"></div>
+                </div>
+            </div>
+
+            <div class="col-4"></div>
+        </div>
+    </div>
+
+    <div class="container-fluid main-panel">
+        <div class="row">
+            <div class="col-3 bg-white method-list">
+                <div class="list-group list-group-flush border-bottom scrollarea">
+                    <a href="#" class="list-group-item list-group-item-action py-3" aria-current="true">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            Service.Echo
+                        </div>
+                        <div class="col-10 mb-1 small">/hello.world.Service/Echo
+                        </div>
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action py-3 lh-tight">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            Search.Card
+                        </div>
+                        <div class="col-10 mb-1 small">/hello.world.Service/Echo
+                        </div>
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action py-3 lh-tight">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            Search.Card
+                        </div>
+                        <div class="col-10 mb-1 small">/hello.world.Service/Echo
+                        </div>
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action py-3 lh-tight">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            Search.Card
+                        </div>
+                        <div class="col-10 mb-1 small">/hello.world.Service/Echo
+                        </div>
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action py-3 lh-tight">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            Search.Card
+                        </div>
+                        <div class="col-10 mb-1 small">/hello.world.Service/Echo
+                        </div>
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action py-3 lh-tight">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            Search.Card
+                        </div>
+                        <div class="col-10 mb-1 small">/hello.world.Service/Echo
+                        </div>
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action py-3 lh-tight" aria-current="true">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            Search.Card
+                        </div>
+                        <div class="col-10 mb-1 small">/hello.world.Service/Echo
+                        </div>
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action py-3 lh-tight" aria-current="true">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            Search.Card
+                        </div>
+                        <div class="col-10 mb-1 small">/hello.world.Service/Echo
+                        </div>
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action py-3 lh-tight" aria-current="true">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            Search.Card
+                        </div>
+                        <div class="col-10 mb-1 small">/hello.world.Service/Echo
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="col-5 border-start border-end request-panel">
+
+                <div class="border-bottom">
+                    <div class="input-group mb-3 mt-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text text-primary" id="basic-addon1">Method</span>
+                        </div>
+                        <input type="text" class="form-control" value="/hello.world.Service/Echo"
+                            aria-describedby="basic-addon1" disabled>
+                        <button class="btn btn-outline-success" type="button">Send</button>
+                    </div>
+                    <div class="input-group mb-3 mt-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text text-primary" id="basic-addon1">Target</span>
+                        </div>
+                        <input type="text" class="form-control" value="tcp://127.0.0.1:9000"
+                            aria-describedby="basic-addon1">
+                    </div>
+
+                </div>
+
+                <div class="form-group pt-2">
+                    <p class="text-primary">Request Body</p>
+                    <textarea class="form-control" id="requestBody" rows="10">{
+  "data": [
+    {
+      "user_id": 1234,
+      "group_id": 456,
+      "type": 1
+    }
+  ]
+}</textarea>
+                </div>
+
+                <div class="form-group pt-2">
+                    <p class="text-primary">Preview</p>
+                    <textarea class="form-control" id="preview" rows="10">## invoke
+curl -X "POST" "http://127.0.0.1:8000/invoke/hello.world.Service/Echo" \
+     -H 'Content-Type: text/plain; charset=utf-8' \
+     -d $'{
+  "data": [
+    {
+      "user_id": 1234,
+      "group_id": 456,
+      "type": 1
+    }
+  ]
+}'</textarea>
+                </div>
+
+            </div>
+
+            <div class="col-4 response-panel">
+                <div class="form-group pt-2">
+                    <p class="text-primary">Response</p>
+                    <textarea class="form-control" id="responseBody" rows="10">{
+  "data": [
+    {
+      "user_id": 1234,
+      "group_id": 456,
+      "type": 1
+    }
+  ]
+}</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://getbootstrap.com/docs/5.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://codemirror.net/lib/codemirror.js"></script>
+    <script src="https://codemirror.net/mode/shell/shell.js"></script>
+    <script src="https://codemirror.net/mode/javascript/javascript.js"></script>
+    <script>
+        var requestBodyEditor = CodeMirror.fromTextArea(requestBody, {
+            lineNumbers: true,
+            mode: { name: "javascript", json: true },
+        });
+        var previewEditor = CodeMirror.fromTextArea(preview, {
+            lineNumbers: true,
+            mode: "shell",
+        });
+        var responseBodyEditor = CodeMirror.fromTextArea(responseBody, {
+            lineNumbers: true,
+            mode: { name: "javascript", json: true },
+        });
+    </script>
+
+</body>
+
+</html>
