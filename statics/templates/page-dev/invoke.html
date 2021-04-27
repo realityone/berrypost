@@ -31,33 +31,17 @@
     <link href="navbar-top.css" rel="stylesheet">
 </head>
 
-<body>
-
-    <nav class="navbar navbar-expand-md bg-white">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">berrypost</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
-                aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarCollapse">
-                <ul class="navbar-nav ms-auto mb-2 mb-md-0">
-                    <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="#">Home</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+<body class="h-100">
 
     <div class="container-fluid status-bar bg-light">
         <div class="row border-top border-bottom">
-            <div class="col-4"></div>
+            <div class="col-4">
+            </div>
 
             <div class="col-4 text-center border-start border-end">
                 <div class="w-100">
                     Sent Invoke
-                    <span class="badge border border-success text-success float-end">200 OK</span>
+                    <span class="badge border border-success text-success float-end mt-1">200 OK</span>
                 </div>
                 <span></span>
                 <div style="font-size: 50%;" class="text-secondary">
@@ -77,6 +61,30 @@
         <div class="row">
             <div class="col-3 bg-white method-list">
                 <div class="list-group list-group-flush border-bottom scrollarea">
+                    <a href="#" class="list-group-item list-group-item-action py-3" aria-current="true">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            Service.Echo <span class="dot bg-success"></span>
+                        </div>
+                        <div class="col-10 mb-1 small">/hello.world.Service/Echo
+                        </div>
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action py-3" aria-current="true">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            Service.Echo <span class="dot bg-danger"></span>
+                        </div>
+                        <div class="col-10 mb-1 small">/hello.world.Service/Echo
+                        </div>
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action py-3" aria-current="true">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            Service.Echo
+                        </div>
+                        <div class="col-10 mb-1 small">/hello.world.Service/Echo
+                        </div>
+                    </a>
+
                     <a href="#" class="list-group-item list-group-item-action py-3" aria-current="true">
                         <div class="d-flex w-100 align-items-center justify-content-between">
                             Service.Echo
@@ -150,8 +158,8 @@
                     </a>
                 </div>
             </div>
-            <div class="col-5 border-start border-end request-panel">
 
+            <div class="col-5 d-flex flex-column border-start border-end request-panel">
                 <div class="border-bottom">
                     <div class="input-group mb-3 mt-3">
                         <div class="input-group-prepend">
@@ -168,44 +176,81 @@
                         <input type="text" class="form-control" value="tcp://127.0.0.1:9000"
                             aria-describedby="basic-addon1">
                     </div>
-
                 </div>
 
-                <div class="form-group pt-2">
-                    <p class="text-primary">Request Body</p>
-                    <textarea class="form-control" id="requestBody" rows="10">{
-  "data": [
-    {
-      "user_id": 1234,
-      "group_id": 456,
-      "type": 1
-    }
-  ]
+                <div class="request-editor pt-2 border-bottom pb-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <ul class="nav nav-tabs card-header-tabs">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#">Metadata</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link active" aria-current="true" href="#">Body</a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <textarea class="form-control" id="requestBody">
+{
+    "data": [
+        {
+            "user_id": 1234,
+            "group_id": 456,
+            "type": 1
+        }
+    ]
 }</textarea>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="form-group pt-2">
-                    <p class="text-primary">Preview</p>
-                    <textarea class="form-control" id="preview" rows="10">## invoke
+
+                <div class="code-preview pt-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <ul class="nav nav-tabs card-header-tabs">
+                                <li class="nav-item">
+                                    <a class="nav-link active" aria-current="true" href="#">Preview</a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <textarea class="form-control" id="preview" rows="10">## invoke
 curl -X "POST" "http://127.0.0.1:8000/invoke/hello.world.Service/Echo" \
-     -H 'Content-Type: text/plain; charset=utf-8' \
-     -d $'{
-  "data": [
-    {
-      "user_id": 1234,
-      "group_id": 456,
-      "type": 1
-    }
-  ]
-}'</textarea>
+ -H 'Content-Type: text/plain; charset=utf-8' \
+ -d $'{
+"data": [
+{
+  "user_id": 1234,
+  "group_id": 456,
+  "type": 1
+}
+]
+}'
+</textarea>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
             </div>
 
-            <div class="col-4 response-panel">
-                <div class="form-group pt-2">
-                    <p class="text-primary">Response</p>
-                    <textarea class="form-control" id="responseBody" rows="10">{
+            <div class="col-4 response-panel pt-2 pb-2">
+                <div class="card">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs">
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="true" href="#">Response</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group h-100">
+                            <textarea class="form-control" id="responseBody" rows="10">{
   "data": [
     {
       "user_id": 1234,
@@ -214,10 +259,13 @@ curl -X "POST" "http://127.0.0.1:8000/invoke/hello.world.Service/Echo" \
     }
   ]
 }</textarea>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
 
     <script src="https://getbootstrap.com/docs/5.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://codemirror.net/lib/codemirror.js"></script>
@@ -228,14 +276,17 @@ curl -X "POST" "http://127.0.0.1:8000/invoke/hello.world.Service/Echo" \
             lineNumbers: true,
             mode: { name: "javascript", json: true },
         });
+        requestBodyEditor.setSize('100%', '300px');
         var previewEditor = CodeMirror.fromTextArea(preview, {
             lineNumbers: true,
             mode: "shell",
         });
+        previewEditor.setSize('100%', '100px');
         var responseBodyEditor = CodeMirror.fromTextArea(responseBody, {
             lineNumbers: true,
-            mode: { name: "javascript", json: true },
+            mode: { name: "text/javascript", json: true },
         });
+        responseBodyEditor.setSize('100%', '100%');
     </script>
 
 </body>

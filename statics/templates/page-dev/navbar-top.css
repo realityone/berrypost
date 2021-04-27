@@ -1,38 +1,45 @@
 html, body {
     height: 100%;
-    margin: 0;
+    width: 100%;
+    font-size: 14px;
+    /* overflow: hidden; */
 }
 
-.navbar {
-    padding-top: .3rem;
-    padding-bottom: .3rem;
+.dot {
+    height: 12px;
+    width: 12px;
+    border-radius: 50%;
+    display: inline-block;
 }
 
-.status-bar {
-    height: 3rem;
+.status-bar, .status-bar > * {
+    height: 44px;
+    min-height: 44px;
 }
 
-.method-list > .list-group {
-    margin-bottom: 10px;
-    overflow: scroll;
+.main-panel, 
+.main-panel > .row, 
+.method-list, 
+.method-list > .list-group, 
+.request-panel,
+.response-panel {
+    height: calc(100vh - 44px);
+}
+
+.response-panel>* {
+    height: 100%;
 }
 
 .method-list {
     padding-left: 0%;
     padding-right: 0%;
-}
-
-.method-list > .list-group > .list-group-item {
-}
-
-.request-panel {
-
+    overflow: scroll;
 }
 
 .CodeMirror {
-    font-size: 12px;
+    font-size: 10px;
 }
 
-.response-panel {
-    
+.code-preview > .card > .card-body > .form-group {
+    max-height: 150px;
 }
