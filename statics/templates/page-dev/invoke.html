@@ -9,24 +9,6 @@
     <!-- Bootstrap core CSS -->
     <link href="https://getbootstrap.com/docs/5.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://codemirror.net/lib/codemirror.css">
-
-    <style>
-        .bd-placeholder-img {
-            font-size: 1.125rem;
-            text-anchor: middle;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            user-select: none;
-        }
-
-        @media (min-width: 768px) {
-            .bd-placeholder-img-lg {
-                font-size: 3.5rem;
-            }
-        }
-    </style>
-
-
     <!-- Custom styles for this template -->
     <link href="navbar-top.css" rel="stylesheet">
 </head>
@@ -208,7 +190,7 @@
                 </div>
 
 
-                <div class="code-preview pt-2">
+                <div class="code-preview pt-2 pb-2">
                     <div class="card">
                         <div class="card-header">
                             <ul class="nav nav-tabs card-header-tabs">
@@ -218,18 +200,18 @@
                             </ul>
                         </div>
                         <div class="card-body">
-                            <div class="form-group">
+                            <div class="preview-area">
                                 <textarea class="form-control" id="preview" rows="10">## invoke
 curl -X "POST" "http://127.0.0.1:8000/invoke/hello.world.Service/Echo" \
  -H 'Content-Type: text/plain; charset=utf-8' \
  -d $'{
-"data": [
-{
-  "user_id": 1234,
-  "group_id": 456,
-  "type": 1
-}
-]
+    "data": [
+        {
+          "user_id": 1234,
+          "group_id": 456,
+          "type": 1
+        }
+    ]
 }'
 </textarea>
                             </div>
@@ -250,7 +232,8 @@ curl -X "POST" "http://127.0.0.1:8000/invoke/hello.world.Service/Echo" \
                     </div>
                     <div class="card-body">
                         <div class="form-group h-100">
-                            <textarea class="form-control" id="responseBody" rows="10">{
+                            <div class="response-area">
+                                <textarea class="form-control" id="responseBody" rows="10">{
   "data": [
     {
       "user_id": 1234,
@@ -259,6 +242,7 @@ curl -X "POST" "http://127.0.0.1:8000/invoke/hello.world.Service/Echo" \
     }
   ]
 }</textarea>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -281,7 +265,7 @@ curl -X "POST" "http://127.0.0.1:8000/invoke/hello.world.Service/Echo" \
             lineNumbers: true,
             mode: "shell",
         });
-        previewEditor.setSize('100%', '100px');
+        previewEditor.setSize('100%', '100%');
         var responseBodyEditor = CodeMirror.fromTextArea(responseBody, {
             lineNumbers: true,
             mode: { name: "text/javascript", json: true },
