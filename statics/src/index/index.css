@@ -1,6 +1,9 @@
 /*
  * Globals
  */
+body {
+  font-family: "Source Sans Pro";
+}
 
 
 /* Custom default button */

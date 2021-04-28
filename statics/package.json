@@ -17,6 +17,7 @@
     "webpack-cli": "^4.6.0"
   },
   "dependencies": {
+    "@fontsource/source-sans-pro": "^4.2.2",
     "bootstrap": "^5.0.0-beta3",
     "lodash": "^4.17.21"
   }

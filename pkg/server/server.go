@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/realityone/berrypost/pkg/server/contrib/cacheablefs"
 	"html/template"
 	"net/http"
 	"time"
@@ -114,7 +115,7 @@ func (s *Server) index(ctx *gin.Context) {
 func (s *Server) setupRouter() {
 	s.GET("/", s.index)
 	s.GET("/api/_intro", s.intro)
-	s.StaticFS("/assets", http.FS(berrypost.DistFS))
+	s.StaticFS("/assets", http.FS(cacheablefs.Wrap(berrypost.DistFS)))
 
 	// builtin components
 	s.management.SetupRoute(s.Engine)
