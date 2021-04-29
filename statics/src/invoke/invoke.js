@@ -54,9 +54,11 @@ var setupClickSend = function () {
         fetch(invokeURL(methodNameInput.value), {
             method: "POST",
             body: window.requestBodyEditor.getValue(),
-        }).then((response) => {
-            window.responseBodyEditor.setValue(response);
-        });
+        }).then((response) => response.json())
+            .then((data) => {
+                const prettyJSON = JSON.stringify(data, null, 2);
+                window.responseBodyEditor.setValue(prettyJSON);
+            });
     };
 };
 
