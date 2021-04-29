@@ -4,7 +4,7 @@
         <div class="input-group-prepend">
             <span class="input-group-text text-primary" id="basic-addon1">Method</span>
         </div>
-        <input type="text" class="form-control" value="/hello.world.Service/Echo" aria-describedby="basic-addon1"
+        <input type="text" class="form-control" placeholder="Method Name" value="" aria-describedby="basic-addon1"
             disabled>
         <button class="btn btn-outline-success" type="button">Send</button>
     </div>
@@ -31,16 +31,7 @@
         </div>
         <div class="card-body">
             <div class="form-group">
-                <textarea class="form-control" id="requestBody">
-{
-"data": [
-{
-"user_id": 1234,
-"group_id": 456,
-"type": 1
-}
-]
-}</textarea>
+                <textarea class="form-control" id="requestBody"></textarea>
             </div>
         </div>
     </div>
@@ -57,19 +48,7 @@
         </div>
         <div class="card-body">
             <div class="preview-area">
-                <textarea class="form-control" id="preview" rows="10">## invoke
-curl -X "POST" "http://127.0.0.1:8000/invoke/hello.world.Service/Echo" \
--H 'Content-Type: text/plain; charset=utf-8' \
--d $'{
-"data": [
-{
-"user_id": 1234,
-"group_id": 456,
-"type": 1
-}
-]
-}'
-</textarea>
+                <textarea class="form-control" id="preview"></textarea>
             </div>
         </div>
     </div>
