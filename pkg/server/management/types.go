@@ -7,6 +7,7 @@ import (
 type Method struct {
 	Name               string
 	FullyQualifiedName string
+	GRPCMethodName     string
 	InputSchema        string
 }
 

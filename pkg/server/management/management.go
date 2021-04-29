@@ -2,6 +2,7 @@ package management
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -120,6 +121,7 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 			for _, m := range s.GetMethods() {
 				pm := &Method{
 					Name:               m.GetName(),
+					GRPCMethodName:     fmt.Sprintf("/%s/%s", s.GetFullyQualifiedName(), m.GetName()),
 					FullyQualifiedName: m.GetFullyQualifiedName(),
 				}
 				descMarshaler := jsonpb.Marshaler{

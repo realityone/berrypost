@@ -5,7 +5,7 @@ import 'codemirror/lib/codemirror.css';
 import 'codemirror/mode/javascript/javascript.js';
 import 'codemirror/mode/shell/shell.js';
 
-window.addEventListener('load', function () {
+var setupCodeMirror = function () {
     var requestBodyEditor = CodeMirror.fromTextArea(requestBody, {
         lineNumbers: true,
         mode: { name: "javascript", json: true },
@@ -21,4 +21,17 @@ window.addEventListener('load', function () {
         mode: { name: "javascript", json: true },
     });
     responseBodyEditor.setSize('100%', '100%');
-});
+};
+
+var fillMethod = function () {
+    var methods = document.getElementsByClassName("service-method");
+    for (const m of methods) {
+        m.onclick = function () {
+            var methodNameInput = document.getElementById("method-name");
+            methodNameInput.value = m.dataset.methodName;
+        }
+    }
+};
+
+window.addEventListener('load', setupCodeMirror);
+window.addEventListener('load', fillMethod);

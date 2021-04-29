@@ -4,13 +4,13 @@
 
     {{range $_, $s := .Services}}
     {{range $_, $m := $s.Methods}}
-    <a data-input-schema='{{ $m.InputSchema }}' href="#" class="list-group-item list-group-item-action py-3"
-        aria-current="true">
+    <a data-method-name='{{ $m.GRPCMethodName }}' data-input-schema='{{ $m.InputSchema }}' href="#"
+        class="service-method list-group-item list-group-item-action py-3" aria-current="true">
         <div class="d-flex w-100 align-items-center justify-content-between">
             {{ $s.Name }}.{{ $m.Name }}
             <!-- <span class="dot bg-success"></span> -->
         </div>
-        <div class="col-10 mb-1 small text-black-50">/{{ $s.FullyQualifiedName }}/{{ $m.Name }}</div>
+        <div class="col-10 mb-1 small text-black-50">{{ $m.GRPCMethodName }}</div>
     </a>
     {{end}}
     {{end}}
