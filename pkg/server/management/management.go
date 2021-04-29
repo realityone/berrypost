@@ -147,6 +147,10 @@ func (m Management) invoke(ctx *gin.Context) {
 		Meta: m.server.Meta(),
 	}
 	serviceIdentifier := ctx.Param("service-identifier")
+	if serviceIdentifier == "" {
+		ctx.HTML(http.StatusOK, "invoke.html", page)
+		return
+	}
 	page, err := m.makeInvokePage(ctx, serviceIdentifier)
 	if err != nil {
 		ctx.Error(err)
