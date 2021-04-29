@@ -40,8 +40,16 @@ var clickFirstMethod = function () {
         m.click();
         return
     }
-}
+};
+
+var setupClickSend = function () {
+    var sendBtn = document.getElementById("send-button");
+    sendBtn.onclick = function () {
+        console.log("AAA");
+    };
+};
 
 window.addEventListener('load', setupCodeMirror);
 window.addEventListener('load', fillMethod);
 window.addEventListener('load', clickFirstMethod);
+window.addEventListener('load', setupClickSend);
