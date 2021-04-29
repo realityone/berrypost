@@ -1,101 +1,19 @@
 {{define "method-list"}}
 
 <div class="list-group list-group-flush border-bottom scrollarea">
+
+    {{range .Service}}
+    {{range .Service.Method}}
     <a href="#" class="list-group-item list-group-item-action py-3" aria-current="true">
         <div class="d-flex w-100 align-items-center justify-content-between">
-            Service.Echo <span class="dot bg-success"></span>
+            {{ .Service.Method.Name }}
+            <!-- <span class="dot bg-success"></span> -->
         </div>
-        <div class="col-10 mb-1 small">/hello.world.Service/Echo
-        </div>
+        <div class="col-10 mb-1 small">{{ .Service.Method.FullyQualifiedName }}</div>
     </a>
+    {{end}}
+    {{end}}
 
-    <a href="#" class="list-group-item list-group-item-action py-3" aria-current="true">
-        <div class="d-flex w-100 align-items-center justify-content-between">
-            Service.Echo <span class="dot bg-danger"></span>
-        </div>
-        <div class="col-10 mb-1 small">/hello.world.Service/Echo
-        </div>
-    </a>
-
-    <a href="#" class="list-group-item list-group-item-action py-3" aria-current="true">
-        <div class="d-flex w-100 align-items-center justify-content-between">
-            Service.Echo
-        </div>
-        <div class="col-10 mb-1 small">/hello.world.Service/Echo
-        </div>
-    </a>
-
-    <a href="#" class="list-group-item list-group-item-action py-3" aria-current="true">
-        <div class="d-flex w-100 align-items-center justify-content-between">
-            Service.Echo
-        </div>
-        <div class="col-10 mb-1 small">/hello.world.Service/Echo
-        </div>
-    </a>
-
-    <a href="#" class="list-group-item list-group-item-action py-3 lh-tight">
-        <div class="d-flex w-100 align-items-center justify-content-between">
-            Search.Card
-        </div>
-        <div class="col-10 mb-1 small">/hello.world.Service/Echo
-        </div>
-    </a>
-
-    <a href="#" class="list-group-item list-group-item-action py-3 lh-tight">
-        <div class="d-flex w-100 align-items-center justify-content-between">
-            Search.Card
-        </div>
-        <div class="col-10 mb-1 small">/hello.world.Service/Echo
-        </div>
-    </a>
-
-    <a href="#" class="list-group-item list-group-item-action py-3 lh-tight">
-        <div class="d-flex w-100 align-items-center justify-content-between">
-            Search.Card
-        </div>
-        <div class="col-10 mb-1 small">/hello.world.Service/Echo
-        </div>
-    </a>
-
-    <a href="#" class="list-group-item list-group-item-action py-3 lh-tight">
-        <div class="d-flex w-100 align-items-center justify-content-between">
-            Search.Card
-        </div>
-        <div class="col-10 mb-1 small">/hello.world.Service/Echo
-        </div>
-    </a>
-
-    <a href="#" class="list-group-item list-group-item-action py-3 lh-tight">
-        <div class="d-flex w-100 align-items-center justify-content-between">
-            Search.Card
-        </div>
-        <div class="col-10 mb-1 small">/hello.world.Service/Echo
-        </div>
-    </a>
-
-    <a href="#" class="list-group-item list-group-item-action py-3 lh-tight" aria-current="true">
-        <div class="d-flex w-100 align-items-center justify-content-between">
-            Search.Card
-        </div>
-        <div class="col-10 mb-1 small">/hello.world.Service/Echo
-        </div>
-    </a>
-
-    <a href="#" class="list-group-item list-group-item-action py-3 lh-tight" aria-current="true">
-        <div class="d-flex w-100 align-items-center justify-content-between">
-            Search.Card
-        </div>
-        <div class="col-10 mb-1 small">/hello.world.Service/Echo
-        </div>
-    </a>
-
-    <a href="#" class="list-group-item list-group-item-action py-3 lh-tight" aria-current="true">
-        <div class="d-flex w-100 align-items-center justify-content-between">
-            Search.Card
-        </div>
-        <div class="col-10 mb-1 small">/hello.world.Service/Echo
-        </div>
-    </a>
 </div>
 
 {{end}}

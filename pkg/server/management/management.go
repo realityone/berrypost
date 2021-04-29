@@ -1,10 +1,13 @@
 package management
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 	"github.com/realityone/berrypost/pkg/server"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Option func(*Management)
@@ -70,10 +73,59 @@ func (m Management) listServiceAlias(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, alias)
 }
 
+func (m Management) findPackageNameByServiceIdentifier(ctx context.Context, serviceIdentifier string) (string, bool) {
+	alias, err := m.protoManager.ListServiceAlias(ctx)
+	if err != nil {
+		return "", false
+	}
+	for _, sa := range alias {
+		for _, a := range sa.Alias {
+			if a == serviceIdentifier {
+				return sa.Package, true
+			}
+		}
+	}
+	return "", false
+}
+
 func (m Management) invoke(ctx *gin.Context) {
 	page := &InvokePage{
 		Meta: m.server.Meta(),
 	}
+	serviceIdentifier := ctx.Param("service-identifier")
+	packageName, ok := m.findPackageNameByServiceIdentifier(ctx, serviceIdentifier)
+	if !ok {
+		ctx.Error(errors.Errorf("Failed to find package from service identifier: %q", serviceIdentifier))
+		return
+	}
+	page.PackageName = packageName
+
+	proto, err := m.protoManager.GetPackage(ctx, &GetPackageRequest{
+		PackageName: packageName,
+	})
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	for _, pkg := range proto.ProtoPackages {
+		page.Service = make([]*Service, 0, len(pkg.FileDescriptor.GetServices()))
+		for _, s := range pkg.FileDescriptor.GetServices() {
+			ps := &Service{
+				Name:               s.GetName(),
+				FullyQualifiedName: s.GetFullyQualifiedName(),
+			}
+			ps.Methods = make([]*Method, 0, len(s.GetMethods()))
+			for _, m := range s.GetMethods() {
+				ps.Methods = append(ps.Methods, &Method{
+					Name:               m.GetName(),
+					FullyQualifiedName: m.GetFullyQualifiedName(),
+				})
+			}
+			page.Service = append(page.Service, ps)
+		}
+	}
+
 	ctx.HTML(http.StatusOK, "invoke.html", page)
 }
 
@@ -82,7 +134,7 @@ func (m Management) Setup(s *server.Server) error {
 
 	r := s.Group("/management")
 	r.GET("/invoke", m.invoke)
-	r.GET("/invoke/:service", m.invoke)
+	r.GET("/invoke/:service-identifier", m.invoke)
 
 	rAPI := s.Group("/management/api")
 	rAPI.GET("/_intro", m.intro)
