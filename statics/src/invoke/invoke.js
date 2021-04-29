@@ -58,6 +58,9 @@ var setupClickSend = function () {
             .then((data) => {
                 const prettyJSON = JSON.stringify(data, null, 2);
                 window.responseBodyEditor.setValue(prettyJSON);
+            }).catch((error) => {
+                const errorMessage = error.toString();
+                window.responseBodyEditor.setValue(errorMessage);
             });
     };
 };
