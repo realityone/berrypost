@@ -81,6 +81,7 @@ func (m Management) Setup(s *server.Server) error {
 	m.server = s
 
 	r := s.Group("/management")
+	r.GET("/invoke", m.invoke)
 	r.GET("/invoke/:service", m.invoke)
 
 	rAPI := s.Group("/management/api")
