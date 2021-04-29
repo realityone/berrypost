@@ -2,14 +2,14 @@
 
 <div class="list-group list-group-flush border-bottom scrollarea">
 
-    {{range .Service}}
-    {{range .Service.Method}}
+    {{range $_, $s := .Services}}
+    {{range $_, $m := $s.Methods}}
     <a href="#" class="list-group-item list-group-item-action py-3" aria-current="true">
         <div class="d-flex w-100 align-items-center justify-content-between">
-            {{ .Service.Method.Name }}
+            {{ $s.Name }}.{{ $m.Name }}
             <!-- <span class="dot bg-success"></span> -->
         </div>
-        <div class="col-10 mb-1 small">{{ .Service.Method.FullyQualifiedName }}</div>
+        <div class="col-10 mb-1 small text-black-50">/{{ $s.FullyQualifiedName }}/{{ $m.Name }}</div>
     </a>
     {{end}}
     {{end}}

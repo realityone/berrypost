@@ -19,5 +19,5 @@ type InvokePage struct {
 	Meta        server.ServerMeta
 	PackageName string
 
-	Service []*Service
+	Services []*Service
 }

@@ -88,28 +88,25 @@ func (m Management) findPackageNameByServiceIdentifier(ctx context.Context, serv
 	return "", false
 }
 
-func (m Management) invoke(ctx *gin.Context) {
-	page := &InvokePage{
-		Meta: m.server.Meta(),
-	}
-	serviceIdentifier := ctx.Param("service-identifier")
+func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string) (*InvokePage, error) {
 	packageName, ok := m.findPackageNameByServiceIdentifier(ctx, serviceIdentifier)
 	if !ok {
-		ctx.Error(errors.Errorf("Failed to find package from service identifier: %q", serviceIdentifier))
-		return
+		return nil, errors.Errorf("Failed to find package from service identifier: %q", serviceIdentifier)
 	}
-	page.PackageName = packageName
+	page := &InvokePage{
+		Meta:        m.server.Meta(),
+		PackageName: packageName,
+	}
 
 	proto, err := m.protoManager.GetPackage(ctx, &GetPackageRequest{
 		PackageName: packageName,
 	})
 	if err != nil {
-		ctx.Error(err)
-		return
+		return nil, err
 	}
 
 	for _, pkg := range proto.ProtoPackages {
-		page.Service = make([]*Service, 0, len(pkg.FileDescriptor.GetServices()))
+		page.Services = make([]*Service, 0, len(pkg.FileDescriptor.GetServices()))
 		for _, s := range pkg.FileDescriptor.GetServices() {
 			ps := &Service{
 				Name:               s.GetName(),
@@ -122,10 +119,23 @@ func (m Management) invoke(ctx *gin.Context) {
 					FullyQualifiedName: m.GetFullyQualifiedName(),
 				})
 			}
-			page.Service = append(page.Service, ps)
+			page.Services = append(page.Services, ps)
 		}
 	}
 
+	return page, nil
+}
+
+func (m Management) invoke(ctx *gin.Context) {
+	page := &InvokePage{
+		Meta: m.server.Meta(),
+	}
+	serviceIdentifier := ctx.Param("service-identifier")
+	page, err := m.makeInvokePage(ctx, serviceIdentifier)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
 	ctx.HTML(http.StatusOK, "invoke.html", page)
 }
 
