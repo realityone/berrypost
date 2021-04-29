@@ -7,6 +7,10 @@ module.exports = {
             import: './src/index/index.js',
             dependOn: 'vendor'
         },
+        invoke: {
+            import: './src/invoke/invoke.js',
+            dependOn: 'vendor'
+        },
         vendor: './src/vendor.js',
     },
     output: {

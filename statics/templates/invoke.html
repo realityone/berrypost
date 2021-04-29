@@ -3,18 +3,15 @@
 
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
-    <title>berrypost</title>
+    <title>{{ .Name }}</title>
 
-    <!-- Bootstrap core CSS -->
-    <link href="https://getbootstrap.com/docs/5.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://codemirror.net/lib/codemirror.css">
-    <!-- Custom styles for this template -->
-    <link href="navbar-top.css" rel="stylesheet">
+    <script src="/assets/statics/dist/vendor.bundle.js"></script>
+    <script src="/assets/statics/dist/invoke.bundle.js"></script>
 </head>
 
 <body class="h-100">
-
     <div class="container-fluid status-bar bg-light">
         <div class="row border-top border-bottom">
             <div class="col-4">
@@ -43,6 +40,7 @@
         <div class="row">
             <div class="col-3 bg-white method-list">
                 <div class="list-group list-group-flush border-bottom scrollarea">
+
                     <a href="#" class="list-group-item list-group-item-action py-3" aria-current="true">
                         <div class="d-flex w-100 align-items-center justify-content-between">
                             Service.Echo <span class="dot bg-success"></span>
@@ -249,29 +247,6 @@ curl -X "POST" "http://127.0.0.1:8000/invoke/hello.world.Service/Echo" \
             </div>
         </div>
     </div>
-
-
-    <script src="https://getbootstrap.com/docs/5.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://codemirror.net/lib/codemirror.js"></script>
-    <script src="https://codemirror.net/mode/shell/shell.js"></script>
-    <script src="https://codemirror.net/mode/javascript/javascript.js"></script>
-    <script>
-        var requestBodyEditor = CodeMirror.fromTextArea(requestBody, {
-            lineNumbers: true,
-            mode: { name: "javascript", json: true },
-        });
-        requestBodyEditor.setSize('100%', '300px');
-        var previewEditor = CodeMirror.fromTextArea(preview, {
-            lineNumbers: true,
-            mode: "shell",
-        });
-        previewEditor.setSize('100%', '100%');
-        var responseBodyEditor = CodeMirror.fromTextArea(responseBody, {
-            lineNumbers: true,
-            mode: { name: "text/javascript", json: true },
-        });
-        responseBodyEditor.setSize('100%', '100%');
-    </script>
 
 </body>
 

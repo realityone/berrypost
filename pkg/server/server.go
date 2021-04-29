@@ -2,10 +2,11 @@ package server
 
 import (
 	"fmt"
-	"github.com/realityone/berrypost/pkg/server/contrib/cacheablefs"
 	"html/template"
 	"net/http"
 	"time"
+
+	"github.com/realityone/berrypost/pkg/server/contrib/cacheablefs"
 
 	"github.com/gin-gonic/gin"
 	"github.com/realityone/berrypost"
@@ -112,15 +113,19 @@ func (s *Server) index(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "index.html", s.meta)
 }
 
+func (s *Server) invoke(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "invoke.html", s.meta)
+}
+
 func (s *Server) setupRouter() {
 	s.GET("/", s.index)
+	s.GET("/invoke", s.invoke)
 	s.GET("/api/_intro", s.intro)
 	s.StaticFS("/assets", http.FS(cacheablefs.Wrap(berrypost.DistFS)))
 
 	// builtin components
 	s.management.SetupRoute(s.Engine)
 	s.proxy.SetupRoute(s.Engine)
-
 }
 
 func (s *Server) RegisterComponentAPI(component string, fn func(gin.IRouter)) {
