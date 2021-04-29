@@ -1,0 +1,26 @@
+{{define "response-panel"}}
+<div class="card">
+    <div class="card-header">
+        <ul class="nav nav-tabs card-header-tabs">
+            <li class="nav-item">
+                <a class="nav-link active" aria-current="true" href="#">Response</a>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body">
+        <div class="form-group h-100">
+            <div class="response-area">
+                <textarea class="form-control" id="responseBody" rows="10">{
+"data": [
+{
+"user_id": 1234,
+"group_id": 456,
+"type": 1
+}
+]
+}</textarea>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
