@@ -24,9 +24,11 @@ var setupCodeMirror = function () {
 };
 
 var fillMethod = function () {
+    console.log("AAAA");
     var methods = document.getElementsByClassName("service-method");
     for (const m of methods) {
         m.onclick = function () {
+            console.log("AAAA");
             var methodNameInput = document.getElementById("method-name");
             methodNameInput.value = m.dataset.methodName;
         }
