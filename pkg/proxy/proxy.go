@@ -11,6 +11,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/realityone/berrypost/pkg/protohelper"
+	"github.com/realityone/berrypost/pkg/server"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
@@ -130,8 +131,17 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
 	return reply, nil
 }
 
-func (p *ProxyServer) SetupRoute(in *gin.Engine) {
-	in.POST("/invoke/:service/:method", p.ServeHTTP)
+func (p *ProxyServer) Name() string {
+	return "proxy-server"
+}
+
+func (p *ProxyServer) Meta() map[string]string {
+	return nil
+}
+
+func (p *ProxyServer) Setup(s *server.Server) error {
+	s.POST("/invoke/:service/:method", p.ServeHTTP)
+	return nil
 }
 
 // New is

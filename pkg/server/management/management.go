@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/realityone/berrypost/pkg/server"
 )
 
 type Option func(*Management)
@@ -15,6 +16,7 @@ func SetProtoManager(in ProtoManager) Option {
 }
 
 type Management struct {
+	server       *server.Server
 	protoManager ProtoManager
 }
 
@@ -68,10 +70,31 @@ func (m Management) listServiceAlias(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, alias)
 }
 
-func (m Management) SetupRoute(in *gin.Engine) {
-	rAPI := in.Group("/management/api")
+func (m Management) invoke(ctx *gin.Context) {
+	page := &InvokePage{
+		Meta: m.server.Meta(),
+	}
+	ctx.HTML(http.StatusOK, "invoke.html", page)
+}
+
+func (m Management) Setup(s *server.Server) error {
+	m.server = s
+
+	r := s.Group("/management")
+	r.GET("/invoke/:service", m.invoke)
+
+	rAPI := s.Group("/management/api")
 	rAPI.GET("/_intro", m.intro)
 	rAPI.GET("/packages", m.listPackages)
 	rAPI.GET("/packages/:package_name", m.getPackage)
 	rAPI.GET("/service-alias", m.listServiceAlias)
+	return nil
+}
+
+func (m Management) Name() string {
+	return "management-server"
+}
+
+func (m Management) Meta() map[string]string {
+	return nil
 }
