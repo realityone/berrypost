@@ -4,6 +4,7 @@ import CodeMirror from 'codemirror';
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/mode/javascript/javascript.js';
 import 'codemirror/mode/shell/shell.js';
+import path from 'path';
 
 var setupCodeMirror = function () {
     window.requestBodyEditor = CodeMirror.fromTextArea(requestBody, {
@@ -24,10 +25,10 @@ var setupCodeMirror = function () {
 };
 
 var fillMethod = function () {
-    var methods = document.getElementsByClassName("service-method");
+    const methods = document.getElementsByClassName("service-method");
     for (const m of methods) {
         m.onclick = function () {
-            var methodNameInput = document.getElementById("method-name");
+            const methodNameInput = document.getElementById("method-name");
             methodNameInput.value = m.dataset.methodName;
             window.requestBodyEditor.setValue(m.dataset.inputSchema);
         }
@@ -35,17 +36,27 @@ var fillMethod = function () {
 };
 
 var clickFirstMethod = function () {
-    var methods = document.getElementsByClassName("service-method");
+    const methods = document.getElementsByClassName("service-method");
     for (const m of methods) {
         m.click();
         return
     }
 };
 
+var invokeURL = function (methodName) {
+    return path.join("/invoke", methodName)
+};
+
 var setupClickSend = function () {
-    var sendBtn = document.getElementById("send-button");
+    const sendBtn = document.getElementById("send-button");
     sendBtn.onclick = function () {
-        console.log("AAA");
+        const methodNameInput = document.getElementById("method-name");
+        fetch(invokeURL(methodNameInput.value), {
+            method: "POST",
+            body: window.requestBodyEditor.getValue(),
+        }).then((response) => {
+            window.responseBodyEditor.setValue(response);
+        });
     };
 };
 
