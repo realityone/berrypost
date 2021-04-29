@@ -7,6 +7,7 @@ import (
 type Method struct {
 	Name               string
 	FullyQualifiedName string
+	InputSchema        string
 }
 
 type Service struct {
@@ -16,8 +17,9 @@ type Service struct {
 }
 
 type InvokePage struct {
-	Meta        server.ServerMeta
-	PackageName string
+	Meta         server.ServerMeta
+	PackageName  string
+	PreferTarget string
 
 	Services []*Service
 }

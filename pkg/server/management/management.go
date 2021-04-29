@@ -4,8 +4,11 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/jhump/protoreflect/dynamic"
 	"github.com/pkg/errors"
 	"github.com/realityone/berrypost/pkg/server"
+	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 )
@@ -94,8 +97,9 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 		return nil, errors.Errorf("Failed to find package from service identifier: %q", serviceIdentifier)
 	}
 	page := &InvokePage{
-		Meta:        m.server.Meta(),
-		PackageName: packageName,
+		Meta:         m.server.Meta(),
+		PackageName:  packageName,
+		PreferTarget: serviceIdentifier,
 	}
 
 	proto, err := m.protoManager.GetPackage(ctx, &GetPackageRequest{
@@ -114,10 +118,20 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 			}
 			ps.Methods = make([]*Method, 0, len(s.GetMethods()))
 			for _, m := range s.GetMethods() {
-				ps.Methods = append(ps.Methods, &Method{
+				pm := &Method{
 					Name:               m.GetName(),
 					FullyQualifiedName: m.GetFullyQualifiedName(),
-				})
+				}
+				descMarshaler := jsonpb.Marshaler{
+					EmitDefaults: true,
+					Indent:       "    ",
+				}
+				inputSchema, err := descMarshaler.MarshalToString(dynamic.NewMessage(m.GetInputType()))
+				if err != nil {
+					logrus.Warn("Failed to marshal method: %q input type as string: %+v", m.GetFullyQualifiedName(), err)
+				}
+				pm.InputSchema = inputSchema
+				ps.Methods = append(ps.Methods, pm)
 			}
 			page.Services = append(page.Services, ps)
 		}

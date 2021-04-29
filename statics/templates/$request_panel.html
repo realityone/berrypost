@@ -2,18 +2,19 @@
 <div class="border-bottom">
     <div class="input-group mb-3 mt-3">
         <div class="input-group-prepend">
+            <span class="input-group-text text-primary" id="basic-addon1">Target</span>
+        </div>
+        <input type="text" class="form-control" placeholder="tcp://127.0.0.1:9000" value="{{ .PreferTarget }}"
+            aria-describedby="basic-addon1">
+    </div>
+
+    <div class="input-group mb-3 mt-3">
+        <div class="input-group-prepend">
             <span class="input-group-text text-primary" id="basic-addon1">Method</span>
         </div>
         <input type="text" class="form-control" placeholder="Method Name" value="" aria-describedby="basic-addon1"
             disabled>
         <button class="btn btn-outline-success" type="button">Send</button>
-    </div>
-    <div class="input-group mb-3 mt-3">
-        <div class="input-group-prepend">
-            <span class="input-group-text text-primary" id="basic-addon1">Target</span>
-        </div>
-        <input type="text" class="form-control" placeholder="tcp://127.0.0.1:9000" value=""
-            aria-describedby="basic-addon1">
     </div>
 </div>
 
