@@ -34,5 +34,14 @@ var fillMethod = function () {
     }
 };
 
+var clickFirstMethod = function () {
+    var methods = document.getElementsByClassName("service-method");
+    for (const m of methods) {
+        m.click();
+        return
+    }
+}
+
 window.addEventListener('load', setupCodeMirror);
 window.addEventListener('load', fillMethod);
+window.addEventListener('load', clickFirstMethod);
