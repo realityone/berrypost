@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"path"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/protobuf/jsonpb"
@@ -155,14 +156,16 @@ func (m Management) firstServiceAlias(ctx context.Context) string {
 	return ""
 }
 
+func (m Management) redirectToFirstService(ctx *gin.Context) {
+	serviceIdentifier := m.firstServiceAlias(ctx)
+	ctx.Redirect(http.StatusTemporaryRedirect, path.Join(ctx.Request.URL.Path, serviceIdentifier))
+}
+
 func (m Management) invoke(ctx *gin.Context) {
 	page := &InvokePage{
 		Meta: m.server.Meta(),
 	}
 	serviceIdentifier := ctx.Param("service-identifier")
-	if serviceIdentifier == "" {
-		serviceIdentifier = m.firstServiceAlias(ctx)
-	}
 	if serviceIdentifier == "" {
 		ctx.HTML(http.StatusOK, "invoke.html", page)
 		return
@@ -179,7 +182,7 @@ func (m Management) Setup(s *server.Server) error {
 	m.server = s
 
 	r := s.Group("/management")
-	r.GET("/invoke", m.invoke)
+	r.GET("/invoke", m.redirectToFirstService)
 	r.GET("/invoke/:service-identifier", m.invoke)
 
 	rAPI := s.Group("/management/api")
