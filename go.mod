@@ -23,4 +23,5 @@ require (
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e // indirect
 )

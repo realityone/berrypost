@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/pkg/errors"
 	"github.com/realityone/berrypost/pkg/server"
 	"github.com/sirupsen/logrus"
-
-	"github.com/gin-gonic/gin"
+	"k8s.io/kube-openapi/pkg/util/sets"
 )
 
 type Option func(*Management)
@@ -83,10 +83,10 @@ func (m Management) findPackageNameByServiceIdentifier(ctx context.Context, serv
 		return "", false
 	}
 	for _, sa := range alias {
-		for _, a := range sa.Alias {
-			if a == serviceIdentifier {
-				return sa.Package, true
-			}
+		names := sets.NewString(sa.Package)
+		names.Insert(sa.Alias...)
+		if names.Has(serviceIdentifier) {
+			return sa.Package, true
 		}
 	}
 	return "", false
@@ -142,11 +142,27 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 	return page, nil
 }
 
+func (m Management) firstServiceAlias(ctx context.Context) string {
+	serviceAlias, err := m.protoManager.ListServiceAlias(ctx)
+	if err != nil {
+		return ""
+	}
+	for _, sa := range serviceAlias {
+		for _, a := range sa.Alias {
+			return a
+		}
+	}
+	return ""
+}
+
 func (m Management) invoke(ctx *gin.Context) {
 	page := &InvokePage{
 		Meta: m.server.Meta(),
 	}
 	serviceIdentifier := ctx.Param("service-identifier")
+	if serviceIdentifier == "" {
+		serviceIdentifier = m.firstServiceAlias(ctx)
+	}
 	if serviceIdentifier == "" {
 		ctx.HTML(http.StatusOK, "invoke.html", page)
 		return

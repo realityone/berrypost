@@ -51,6 +51,9 @@ var setupClickSend = function () {
     const sendBtn = document.getElementById("send-button");
     sendBtn.onclick = function () {
         const methodNameInput = document.getElementById("method-name");
+        if (methodNameInput.value === "") {
+            return
+        }
         fetch(invokeURL(methodNameInput.value), {
             method: "POST",
             body: window.requestBodyEditor.getValue(),
