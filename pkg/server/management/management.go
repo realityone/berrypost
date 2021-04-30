@@ -158,18 +158,11 @@ func (m Management) firstServiceAlias(ctx context.Context) string {
 
 func (m Management) redirectToFirstService(ctx *gin.Context) {
 	serviceIdentifier := m.firstServiceAlias(ctx)
-	ctx.Redirect(http.StatusTemporaryRedirect, path.Join(ctx.Request.URL.Path, serviceIdentifier))
+	ctx.Redirect(http.StatusTemporaryRedirect, path.Join("/management/invoke", serviceIdentifier))
 }
 
 func (m Management) invoke(ctx *gin.Context) {
-	page := &InvokePage{
-		Meta: m.server.Meta(),
-	}
 	serviceIdentifier := ctx.Param("service-identifier")
-	if serviceIdentifier == "" {
-		ctx.HTML(http.StatusOK, "invoke.html", page)
-		return
-	}
 	page, err := m.makeInvokePage(ctx, serviceIdentifier)
 	if err != nil {
 		ctx.Error(err)
@@ -178,11 +171,18 @@ func (m Management) invoke(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "invoke.html", page)
 }
 
+func (m Management) emptyInvoke(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "invoke.html", &InvokePage{
+		Meta: m.server.Meta(),
+	})
+}
+
 func (m Management) Setup(s *server.Server) error {
 	m.server = s
 
 	r := s.Group("/management")
-	r.GET("/invoke", m.redirectToFirstService)
+	r.GET("/rediect-to-example", m.redirectToFirstService)
+	r.GET("/invoke", m.emptyInvoke)
 	r.GET("/invoke/:service-identifier", m.invoke)
 
 	rAPI := s.Group("/management/api")

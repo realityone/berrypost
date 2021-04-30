@@ -47,6 +47,10 @@ var invokeURL = function (methodName) {
     return path.join("/invoke", methodName)
 };
 
+var updateStatusBar = function (response) {
+
+};
+
 var setupClickSend = function () {
     const sendBtn = document.getElementById("send-button");
     sendBtn.onclick = function () {
