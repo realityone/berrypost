@@ -65,6 +65,6 @@ html, body {
 
 .scrollable-menu {
     height: auto;
-    max-height: 200px;
+    max-height: 40vh;
     overflow-x: hidden;
 }

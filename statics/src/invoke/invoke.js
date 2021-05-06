@@ -72,7 +72,25 @@ var setupClickSend = function () {
     };
 };
 
+var serviceMenuLiveSearch = function () {
+    const searchInput = document.getElementById("serviceMenuSearch");
+    searchInput.onkeyup = function () {
+        const filter = searchInput.value;
+        const serviceMenuContent = document.getElementById("serviceMenuContent");
+        const links = serviceMenuContent.getElementsByTagName("a");
+        for (const a of links) {
+            const txtValue = a[i].textContent || a[i].innerText;
+            if (txtValue.indexOf(filter) > -1) {
+                a[i].style.display = "";
+                continue;
+            }
+            a[i].style.display = "none";
+        }
+    }
+};
+
 window.addEventListener('load', setupCodeMirror);
 window.addEventListener('load', fillMethod);
 window.addEventListener('load', clickFirstMethod);
 window.addEventListener('load', setupClickSend);
+window.addEventListener('load', serviceMenuLiveSearch);
