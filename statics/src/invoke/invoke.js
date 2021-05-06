@@ -79,12 +79,12 @@ var serviceMenuLiveSearch = function () {
         const serviceMenuContent = document.getElementById("serviceMenuContent");
         const links = serviceMenuContent.getElementsByTagName("a");
         for (const a of links) {
-            const txtValue = a[i].textContent || a[i].innerText;
+            const txtValue = a.textContent || a.innerText;
             if (txtValue.indexOf(filter) > -1) {
-                a[i].style.display = "";
+                a.style.display = "";
                 continue;
             }
-            a[i].style.display = "none";
+            a.style.display = "none";
         }
     }
 };
