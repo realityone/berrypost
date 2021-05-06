@@ -1,11 +1,13 @@
 package cacheablefs
 
 import (
+	"io"
 	"io/fs"
 	"time"
 )
 
 var startAt = time.Now()
+var _ io.Seeker = &wrappedFile{}
 
 // make embedFS is cacheable by Last-Modified header.
 type wrappedFS struct{ fs.FS }
@@ -22,6 +24,11 @@ func (w wrappedFile) Stat() (fs.FileInfo, error) {
 		return nil, err
 	}
 	return wrappedStat{d}, nil
+}
+
+func (w wrappedFile) Seek(offset int64, whence int) (int64, error) {
+	seeker := w.File.(io.Seeker)
+	return seeker.Seek(offset, whence)
 }
 
 func (w wrappedFS) Open(name string) (fs.File, error) {
