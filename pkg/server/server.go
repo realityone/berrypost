@@ -14,8 +14,9 @@ import (
 
 type Option func(*ServerConfig)
 type ServerConfig struct {
-	Components []Component
-	Meta       ServerMeta
+	Components    []Component
+	Meta          ServerMeta
+	GinMiddleware []gin.HandlerFunc
 }
 
 type Component interface {
@@ -56,12 +57,14 @@ func New(opts ...Option) *Server {
 			Description: "Berrypost is a simple gRPC service debugging tool, built for human beings.",
 			GitHubLink:  true,
 		},
+		GinMiddleware: []gin.HandlerFunc{gin.Logger(), gin.Recovery()},
 	}
 	for _, opt := range opts {
 		opt(cfg)
 	}
 
-	engine := gin.Default()
+	engine := gin.New()
+	engine.Use(cfg.GinMiddleware...)
 	server := &Server{
 		Engine:     engine,
 		components: cfg.Components,
