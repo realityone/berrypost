@@ -39,6 +39,7 @@ func SetServerMeta(in ServerMeta) Option {
 type ServerMeta struct {
 	Name        string
 	Description string
+	GitHubLink  bool
 }
 
 type Server struct {
@@ -53,6 +54,7 @@ func New(opts ...Option) *Server {
 		Meta: ServerMeta{
 			Name:        "berrypost",
 			Description: "Berrypost is a simple gRPC service debugging tool, built for human beings.",
+			GitHubLink:  true,
 		},
 	}
 	for _, opt := range opts {
