@@ -99,9 +99,10 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 		return nil, errors.Errorf("Failed to find package from service identifier: %q", serviceIdentifier)
 	}
 	page := &InvokePage{
-		Meta:         m.server.Meta(),
-		PackageName:  packageName,
-		PreferTarget: serviceIdentifier,
+		Meta:            m.server.Meta(),
+		PackageName:     packageName,
+		PreferTarget:    serviceIdentifier,
+		ServiceDropdown: m.allServiceAlias(ctx),
 	}
 
 	proto, err := m.protoManager.GetPackage(ctx, &GetPackageRequest{
@@ -161,6 +162,21 @@ func (m Management) redirectToFirstService(ctx *gin.Context) {
 	ctx.Redirect(http.StatusTemporaryRedirect, path.Join("/management/invoke", serviceIdentifier))
 }
 
+func (m Management) allServiceAlias(ctx context.Context) []string {
+	alias, err := m.protoManager.ListServiceAlias(ctx)
+	if err != nil {
+		logrus.Error("Failed to list service alias: %+v", err)
+		return nil
+	}
+	out := make([]string, 0, len(alias))
+	for _, a := range alias {
+		if len(a.Alias) > 0 {
+			out = append(out, a.Alias[0])
+		}
+	}
+	return out
+}
+
 func (m Management) invoke(ctx *gin.Context) {
 	serviceIdentifier := ctx.Param("service-identifier")
 	page, err := m.makeInvokePage(ctx, serviceIdentifier)
@@ -173,7 +189,8 @@ func (m Management) invoke(ctx *gin.Context) {
 
 func (m Management) emptyInvoke(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "invoke.html", &InvokePage{
-		Meta: m.server.Meta(),
+		Meta:            m.server.Meta(),
+		ServiceDropdown: m.allServiceAlias(ctx),
 	})
 }
 

@@ -18,9 +18,10 @@ type Service struct {
 }
 
 type InvokePage struct {
-	Meta         server.ServerMeta
-	PackageName  string
-	PreferTarget string
-
-	Services []*Service
+	Meta              server.ServerMeta
+	ServiceIdentifier string
+	PackageName       string
+	PreferTarget      string
+	Services          []*Service
+	ServiceDropdown   []string
 }

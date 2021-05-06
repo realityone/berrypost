@@ -1,19 +1,35 @@
 {{define "status-bar"}}
 
 <div class="row border-top border-bottom">
-    <div class="col-4">
+    <div class="col-4 d-flex align-items-center">
+        <div class="dropdown">
+            <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="serviceMenu"
+                data-bs-toggle="dropdown" aria-expanded="false">
+                {{if eq .ServiceIdentifier ""}}
+                [Select To Start]
+                {{else}}
+                {{ .PackageName }}
+                {{end}}
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="serviceMenu">
+                <input type="text" class="form-control" placeholder="Search..." id="serviceMenuSearch">
+                {{range $_, $a := .ServiceDropdown}}
+                <li><a class="dropdown-item" href="/management/invoke/{{$a}}">{{ $a }}</a></li>
+                {{end}}
+            </ul>
+        </div>
     </div>
 
     <div class="col-4 text-center border-start border-end">
         <div class="w-100">
             Ready
-            <span style="display: none;" class="badge border border-success text-success float-end mt-1">200 OK</span>
+            <!-- <span class="badge border border-success text-success float-end mt-1">200 OK</span> -->
         </div>
         <span></span>
         <!-- <div style="font-size: 50%;" class="text-secondary">
             POST /invoke/hello.world.Service/Echo
-        </div> -->
-        <!-- <div style="height: 3px;" class="progress">
+        </div>
+        <div style="height: 3px;" class="progress">
             <div class="progress-bar progress-bar-striped bg-success" role="progressbar" aria-valuenow="75"
                 aria-valuemin="0" aria-valuemax="100" style="width: 75%"></div>
         </div> -->
