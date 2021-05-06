@@ -62,3 +62,9 @@ html, body {
     height: 100%;
     position: relative;
 }
+
+.scrollable-menu {
+    height: auto;
+    max-height: 200px;
+    overflow-x: hidden;
+}

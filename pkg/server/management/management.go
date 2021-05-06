@@ -99,10 +99,11 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 		return nil, errors.Errorf("Failed to find package from service identifier: %q", serviceIdentifier)
 	}
 	page := &InvokePage{
-		Meta:            m.server.Meta(),
-		PackageName:     packageName,
-		PreferTarget:    serviceIdentifier,
-		ServiceDropdown: m.allServiceAlias(ctx),
+		Meta:              m.server.Meta(),
+		ServiceIdentifier: serviceIdentifier,
+		PackageName:       packageName,
+		PreferTarget:      serviceIdentifier,
+		ServiceDropdown:   m.allServiceAlias(ctx),
 	}
 
 	proto, err := m.protoManager.GetPackage(ctx, &GetPackageRequest{
