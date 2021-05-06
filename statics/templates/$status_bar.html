@@ -8,7 +8,7 @@
                 {{if eq .ServiceIdentifier ""}}
                 [Select To Start]
                 {{else}}
-                {{ .PackageName }}
+                {{ .ServiceIdentifier }}
                 {{end}}
             </button>
             <ul class="dropdown-menu scrollable-menu" role="menu" aria-labelledby="serviceMenu">
