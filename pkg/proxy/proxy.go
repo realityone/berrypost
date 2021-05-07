@@ -89,6 +89,7 @@ func (ps *ProxyServer) ServeHTTP(ctx *gin.Context) {
 
 	marshaler := &jsonpb.Marshaler{
 		AnyResolver: AsContextedAnyResolver(ctx, ps.protoStore),
+		Indent:      "    ",
 	}
 	if err := marshaler.Marshal(ctx.Writer, reply); err != nil {
 		logrus.Errorf("Failed to marshal reply on method: %q: %+v", invokeCtx.serviceMethod, err)
