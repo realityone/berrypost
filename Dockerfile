@@ -5,7 +5,7 @@ RUN npm install && npm run build
 
 FROM golang:latest as berrypost
 ADD . /data/berrypost
-COPY --from=statics_dist /data/berrypost/statics/dist/* /data/berrypost/statics/dist
+COPY --from=statics_dist /data/berrypost/statics/dist/* /data/berrypost/statics/dist/
 WORKDIR /data/berrypost
 RUN CGO_ENABLED=0 GOOS=linux go build -o berrypost/berrypost berrypost/main.go
 
