@@ -12,7 +12,7 @@ var setupCodeMirror = function () {
         mode: { name: "javascript", json: true },
     });
     window.requestBodyEditor.setSize('100%', '300px');
-    window.requestBodyEditor.on('keyup', () => {
+    window.requestBodyEditor.on('change', (instance, changeObj) => {
         GeneratePreviewCmdLine();
     });
     window.previewEditor = CodeMirror.fromTextArea(preview, {
@@ -102,7 +102,7 @@ var GeneratePreviewCmdLine = function () {
     const body = window.requestBodyEditor.getValue();
     const targetInput = document.getElementById("target-addr");
 
-    const curlCmdLine = `## ${path}
+    const curlCmdLine = `## ${methodNameInput.value}
 curl -X "POST" "${baseURL}${path}" \\
     -H 'X-Berrypost-Target: ${targetInput.value}' \\
     -H 'Content-Type: text/plain; charset=utf-8' \\
