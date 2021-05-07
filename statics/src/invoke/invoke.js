@@ -12,6 +12,9 @@ var setupCodeMirror = function () {
         mode: { name: "javascript", json: true },
     });
     window.requestBodyEditor.setSize('100%', '300px');
+    window.requestBodyEditor.on('keyup', () => {
+        GeneratePreviewCmdLine();
+    });
     window.previewEditor = CodeMirror.fromTextArea(preview, {
         lineNumbers: true,
         mode: "shell",
@@ -43,7 +46,7 @@ var clickFirstMethod = function () {
     }
 };
 
-var invokeURL = function (methodName) {
+var invokePath = function (methodName) {
     return path.join("/invoke", methodName)
 };
 
@@ -53,12 +56,12 @@ var updateStatusBar = function (response) {
 
 var setupClickSend = function () {
     const sendBtn = document.getElementById("send-button");
-    sendBtn.onclick = function () {
+    sendBtn.addEventListener('click', () => {
         const methodNameInput = document.getElementById("method-name");
         if (methodNameInput.value === "") {
             return
         }
-        fetch(invokeURL(methodNameInput.value), {
+        fetch(invokePath(methodNameInput.value), {
             method: "POST",
             body: window.requestBodyEditor.getValue(),
         }).then((response) => response.json())
@@ -69,12 +72,12 @@ var setupClickSend = function () {
                 const errorMessage = error.toString();
                 window.responseBodyEditor.setValue(errorMessage);
             });
-    };
+    })
 };
 
 var serviceMenuLiveSearch = function () {
     const searchInput = document.getElementById("serviceMenuSearch");
-    searchInput.onkeyup = function () {
+    searchInput.addEventListener('keyup', () => {
         const filter = searchInput.value;
         const serviceMenuContent = document.getElementById("serviceMenuContent");
         const links = serviceMenuContent.getElementsByTagName("a");
@@ -86,7 +89,25 @@ var serviceMenuLiveSearch = function () {
             }
             a.style.display = "none";
         }
+    });
+};
+
+var GeneratePreviewCmdLine = function () {
+    const methodNameInput = document.getElementById("method-name");
+    if (methodNameInput.value === "") {
+        return;
     }
+    const baseURL = `${location.protocol}//${location.host}`;
+    const path = invokePath(methodNameInput.value);
+    const body = window.requestBodyEditor.getValue();
+    const targetInput = document.getElementById("target-addr");
+
+    const curlCmdLine = `## ${path}
+curl -X "POST" "${baseURL}${path}" \\
+    -H 'X-Berrypost-Target: ${targetInput.value}' \\
+    -H 'Content-Type: text/plain; charset=utf-8' \\
+    -d $'${body}'`;
+    window.previewEditor.setValue(curlCmdLine);
 };
 
 window.addEventListener('load', setupCodeMirror);

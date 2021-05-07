@@ -2,18 +2,18 @@
 <div class="border-bottom">
     <div class="input-group mb-3 mt-3">
         <div class="input-group-prepend">
-            <span class="input-group-text text-primary" id="basic-addon1">Target</span>
+            <span class="input-group-text text-primary">Target</span>
         </div>
-        <input type="text" class="form-control" placeholder="tcp://127.0.0.1:9000" value="{{ .PreferTarget }}"
-            aria-describedby="basic-addon1">
+        <input id="target-addr" type="text" class="form-control" placeholder="tcp://127.0.0.1:9000"
+            value="{{ .PreferTarget }}">
     </div>
 
     <div class="input-group mb-3 mt-3">
         <div class="input-group-prepend">
-            <span class="input-group-text text-primary" id="basic-addon1">Method</span>
+            <span class="input-group-text text-primary">Method</span>
         </div>
         <input id="method-name" type="text" class="form-control" placeholder="/<package>.<service>/<method>" value=""
-            aria-describedby="basic-addon1" disabled>
+            disabled>
         <button id="send-button" class="btn btn-outline-success" type="button">Send</button>
     </div>
 </div>
@@ -49,7 +49,7 @@
         </div>
         <div class="card-body">
             <div class="preview-area">
-                <textarea class="form-control" id="preview">#TBD</textarea>
+                <textarea class="form-control" id="preview"></textarea>
             </div>
         </div>
     </div>
