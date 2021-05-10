@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/protobuf/jsonpb"
@@ -251,6 +252,7 @@ func (m Management) allProtoFiles(ctx context.Context) []*ProtoFileMeta {
 
 func (m Management) invoke(ctx *gin.Context) {
 	serviceIdentifier := ctx.Param("service-identifier")
+	serviceIdentifier = strings.TrimPrefix(serviceIdentifier, "/")
 	page, err := m.makeInvokePage(ctx, serviceIdentifier)
 	if err != nil {
 		ctx.Error(err)
