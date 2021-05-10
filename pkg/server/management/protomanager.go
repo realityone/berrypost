@@ -13,6 +13,22 @@ type ProtoManager interface {
 	ListPackages(context.Context) ([]*PackageMeta, error)
 	GetPackage(context.Context, *GetPackageRequest) (*ProtoPackageProfile, error)
 	ListServiceAlias(context.Context) ([]*ServiceAlias, error)
+	ListProtoFiles(context.Context) ([]*ProtoFileMeta, error)
+	GetProtoFile(context.Context, *GetProtoFileRequest) (*ProtoFileProfile, error)
+}
+
+type ProtoFileMeta struct {
+	Filename string    `json:"filename"`
+	Meta     ProtoMeta `json:"meta"`
+}
+
+type GetProtoFileRequest struct {
+	ImportPath string
+}
+
+type ProtoFileProfile struct {
+	Common       Common        `json:"common"`
+	ProtoPackage *ProtoPackage `json:"proto_package"`
 }
 
 type ServiceAlias struct {
@@ -35,8 +51,8 @@ type ProtoMeta struct {
 }
 
 type ProtoPackageProfile struct {
-	Common        Common          `json:"common"`
-	ProtoPackages []*ProtoPackage `json:"proto_packages"`
+	Common     Common              `json:"common"`
+	ProtoFiles []*ProtoFileProfile `json:"proto_files"`
 }
 
 type ProtoPackage struct {
@@ -74,4 +90,12 @@ func (dpm defaultProtoManager) GetPackage(context.Context, *GetPackageRequest) (
 
 func (dpm defaultProtoManager) ListServiceAlias(context.Context) ([]*ServiceAlias, error) {
 	return []*ServiceAlias{}, nil
+}
+
+func (dpm defaultProtoManager) ListProtoFiles(context.Context) ([]*ProtoFileMeta, error) {
+	return []*ProtoFileMeta{}, nil
+}
+
+func (dpm defaultProtoManager) GetProtoFile(context.Context, *GetProtoFileRequest) (*ProtoFileProfile, error) {
+	return &ProtoFileProfile{}, nil
 }

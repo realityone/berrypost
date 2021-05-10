@@ -78,68 +78,145 @@ func (m Management) listServiceAlias(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, alias)
 }
 
-func (m Management) findPackageNameByServiceIdentifier(ctx context.Context, serviceIdentifier string) (string, bool) {
-	alias, err := m.protoManager.ListServiceAlias(ctx)
+// find proto file by service identifier in this order:
+// - proto file identifier
+// - proto file name
+// - proto package name
+// - service alias
+func (m Management) findProtoFileByServiceIdentifier(ctx context.Context, serviceIdentifier string) (*ProtoFileProfile, bool) {
+	files, err := m.protoManager.ListProtoFiles(ctx)
 	if err != nil {
-		return "", false
+		logrus.Error("Failed to list proto files: %+v", err)
 	}
-	for _, sa := range alias {
-		names := sets.NewString(sa.Package)
-		names.Insert(sa.Alias...)
-		if names.Has(serviceIdentifier) {
-			return sa.Package, true
+
+	fromProtoImportPath := func() (string, bool, error) {
+		for _, f := range files {
+			if f.Meta.ImportPath == serviceIdentifier {
+				return f.Meta.ImportPath, true, nil
+			}
 		}
+		return "", false, nil
 	}
-	return "", false
+
+	fromProtoFilename := func() (string, bool, error) {
+		for _, f := range files {
+			if f.Filename == serviceIdentifier {
+				return f.Meta.ImportPath, true, nil
+			}
+		}
+		return "", false, nil
+	}
+
+	fromProtoPackageName := func() (string, bool, error) {
+		packages, err := m.protoManager.ListPackages(ctx)
+		if err != nil {
+			return "", false, err
+		}
+		for _, p := range packages {
+			if p.Package == serviceIdentifier {
+				return p.Meta.ImportPath, true, nil
+			}
+		}
+		return "", false, nil
+	}
+
+	fromServiceAlias := func() (string, bool, error) {
+		alias, err := m.protoManager.ListServiceAlias(ctx)
+		if err != nil {
+			return "", false, nil
+		}
+		packages, err := m.protoManager.ListPackages(ctx)
+		if err != nil {
+			return "", false, err
+		}
+		packageGroupByName := map[string]*PackageMeta{}
+		for _, p := range packages {
+			packageGroupByName[p.Package] = p
+		}
+
+		for _, sa := range alias {
+			names := sets.NewString(sa.Package)
+			names.Insert(sa.Alias...)
+			if names.Has(serviceIdentifier) {
+				p, ok := packageGroupByName[sa.Package]
+				if ok {
+					return p.Meta.ImportPath, true, nil
+				}
+			}
+		}
+		return "", false, nil
+	}
+
+	for _, fn := range []func() (string, bool, error){
+		fromProtoImportPath,
+		fromProtoFilename,
+		fromProtoPackageName,
+		fromServiceAlias,
+	} {
+		importPath, ok, err := fn()
+		if err != nil {
+			logrus.Error("Failed to find proto import: %+v", err)
+			continue
+		}
+		if !ok {
+			logrus.Error("Failed to find proto file desctrption with given service identifier: %q", serviceIdentifier)
+			continue
+		}
+		profile, err := m.protoManager.GetProtoFile(ctx, &GetProtoFileRequest{
+			ImportPath: importPath,
+		})
+		if err != nil {
+			logrus.Error("Failed to get proto file by import path: %q: %+v", importPath, err)
+			continue
+		}
+		return profile, ok
+	}
+
+	return nil, false
 }
 
 func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string) (*InvokePage, error) {
-	packageName, ok := m.findPackageNameByServiceIdentifier(ctx, serviceIdentifier)
+	fileProfile, ok := m.findProtoFileByServiceIdentifier(ctx, serviceIdentifier)
 	if !ok {
-		return nil, errors.Errorf("Failed to find package from service identifier: %q", serviceIdentifier)
+		return nil, errors.Errorf("Failed to find package profile from service identifier: %q", serviceIdentifier)
 	}
 	page := &InvokePage{
 		Meta:              m.server.Meta(),
 		ServiceIdentifier: serviceIdentifier,
-		PackageName:       packageName,
+		PackageName:       fileProfile.ProtoPackage.FileDescriptor.GetFullyQualifiedName(),
 		PreferTarget:      serviceIdentifier,
-		ServiceDropdown:   m.allServiceAlias(ctx),
+		ProtoFiles:        m.allProtoFiles(ctx),
+	}
+	preferTarget, ok := fileProfile.Common.Annotation[AppBerrypostManagementInvokePreferTarget]
+	if ok {
+		page.PreferTarget = preferTarget
 	}
 
-	proto, err := m.protoManager.GetPackage(ctx, &GetPackageRequest{
-		PackageName: packageName,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, pkg := range proto.ProtoPackages {
-		page.Services = make([]*Service, 0, len(pkg.FileDescriptor.GetServices()))
-		for _, s := range pkg.FileDescriptor.GetServices() {
-			ps := &Service{
-				Name:               s.GetName(),
-				FullyQualifiedName: s.GetFullyQualifiedName(),
-			}
-			ps.Methods = make([]*Method, 0, len(s.GetMethods()))
-			for _, m := range s.GetMethods() {
-				pm := &Method{
-					Name:               m.GetName(),
-					GRPCMethodName:     fmt.Sprintf("/%s/%s", s.GetFullyQualifiedName(), m.GetName()),
-					FullyQualifiedName: m.GetFullyQualifiedName(),
-				}
-				descMarshaler := jsonpb.Marshaler{
-					EmitDefaults: true,
-					Indent:       "    ",
-				}
-				inputSchema, err := descMarshaler.MarshalToString(dynamic.NewMessage(m.GetInputType()))
-				if err != nil {
-					logrus.Warn("Failed to marshal method: %q input type as string: %+v", m.GetFullyQualifiedName(), err)
-				}
-				pm.InputSchema = inputSchema
-				ps.Methods = append(ps.Methods, pm)
-			}
-			page.Services = append(page.Services, ps)
+	page.Services = make([]*Service, 0, len(fileProfile.ProtoPackage.FileDescriptor.GetServices()))
+	for _, s := range fileProfile.ProtoPackage.FileDescriptor.GetServices() {
+		ps := &Service{
+			Name:               s.GetName(),
+			FullyQualifiedName: s.GetFullyQualifiedName(),
 		}
+		ps.Methods = make([]*Method, 0, len(s.GetMethods()))
+		for _, m := range s.GetMethods() {
+			pm := &Method{
+				Name:               m.GetName(),
+				GRPCMethodName:     fmt.Sprintf("/%s/%s", s.GetFullyQualifiedName(), m.GetName()),
+				FullyQualifiedName: m.GetFullyQualifiedName(),
+			}
+			descMarshaler := jsonpb.Marshaler{
+				EmitDefaults: true,
+				Indent:       "    ",
+			}
+			inputSchema, err := descMarshaler.MarshalToString(dynamic.NewMessage(m.GetInputType()))
+			if err != nil {
+				logrus.Warn("Failed to marshal method: %q input type as string: %+v", m.GetFullyQualifiedName(), err)
+			}
+			pm.InputSchema = inputSchema
+			ps.Methods = append(ps.Methods, pm)
+		}
+		page.Services = append(page.Services, ps)
 	}
 
 	return page, nil
@@ -163,19 +240,13 @@ func (m Management) redirectToFirstService(ctx *gin.Context) {
 	ctx.Redirect(http.StatusTemporaryRedirect, path.Join("/management/invoke", serviceIdentifier))
 }
 
-func (m Management) allServiceAlias(ctx context.Context) []string {
-	alias, err := m.protoManager.ListServiceAlias(ctx)
+func (m Management) allProtoFiles(ctx context.Context) []*ProtoFileMeta {
+	files, err := m.protoManager.ListProtoFiles(ctx)
 	if err != nil {
-		logrus.Error("Failed to list service alias: %+v", err)
+		logrus.Error("Failed to list proto files: %+v", err)
 		return nil
 	}
-	out := make([]string, 0, len(alias))
-	for _, a := range alias {
-		if len(a.Alias) > 0 {
-			out = append(out, a.Alias[0])
-		}
-	}
-	return out
+	return files
 }
 
 func (m Management) invoke(ctx *gin.Context) {
@@ -190,8 +261,8 @@ func (m Management) invoke(ctx *gin.Context) {
 
 func (m Management) emptyInvoke(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "invoke.html", &InvokePage{
-		Meta:            m.server.Meta(),
-		ServiceDropdown: m.allServiceAlias(ctx),
+		Meta:       m.server.Meta(),
+		ProtoFiles: m.allProtoFiles(ctx),
 	})
 }
 

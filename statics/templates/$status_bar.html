@@ -13,8 +13,9 @@
             </button>
             <ul id="serviceMenuContent" class="dropdown-menu scrollable-menu" role="menu" aria-labelledby="serviceMenu">
                 <input type="text" class="form-control" placeholder="Search..." id="serviceMenuSearch">
-                {{range $_, $a := .ServiceDropdown}}
-                <li><a class="dropdown-item" href="/management/invoke/{{$a}}">{{ $a }}</a></li>
+                {{range $_, $pf := .ProtoFiles}}
+                <li><a class="dropdown-item" href="/management/invoke/{{$pf.$FileIdentifier}}">{{ $pf.$Filename }}</a>
+                </li>
                 {{end}}
             </ul>
         </div>
