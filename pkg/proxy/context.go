@@ -14,3 +14,12 @@ type Context struct {
 
 	serviceMethod string
 }
+
+func GetUserDefinedTarget(ctx context.Context) (string, bool) {
+	proxyCtx, ok := ctx.(*Context)
+	if !ok {
+		return "", false
+	}
+	target := proxyCtx.req.Header.Get("X-Berrypost-Target")
+	return target, target != ""
+}

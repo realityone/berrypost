@@ -29,43 +29,53 @@ type ProxyServer struct {
 	protoStore RuntimeProtoStore
 
 	clientLock sync.RWMutex
-	clients    map[string]*clientSet
+	clients    map[clientID]*clientSet
+}
+
+type clientID struct {
+	service string
+	target  string
 }
 
 func (ps *ProxyServer) client(ctx *Context, service string) (*clientSet, error) {
-	logrus.Debugf("Try to dial gRPC connection to service: %q", service)
+	userDefinedTarget, _ := GetUserDefinedTarget(ctx)
+	clientKey := clientID{service, userDefinedTarget}
+	logrus.Debugf("Try to dial gRPC connection to service: %+v", clientKey)
 	ps.clientLock.RLock()
-	cli, ok := ps.clients[service]
+	cli, ok := ps.clients[clientKey]
 	ps.clientLock.RUnlock()
 	if ok {
-		logrus.Debugf("Got %q gRPC connection from client store", service)
+		logrus.Debugf("Got %+v gRPC connection from client store", clientKey)
 		return cli, nil
 	}
 
-	logrus.Debugf("Resolving service %q to dial gRPC connection", service)
-	target, err := ps.resolver.ResolveOnce(ctx, service)
+	logrus.Debugf("Resolving service %+v to dial gRPC connection", clientKey)
+	target, err := ps.resolver.ResolveOnce(ctx, &ResolveOnceRequest{
+		ServiceFullyQualifiedName: service,
+		UserDefinedTarget:         userDefinedTarget,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Debugf("Dial gRPC connection to service: %q", service)
+	logrus.Debugf("Dial gRPC connection to service: %+v", clientKey)
 	newCC, err := grpc.DialContext(ctx, target, grpc.WithBlock(), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
 	ps.clientLock.Lock()
 	defer ps.clientLock.Unlock()
-	cli, ok = ps.clients[service]
+	cli, ok = ps.clients[clientKey]
 	if ok {
-		logrus.Debugf("Already has established connection for service: %q", service)
+		logrus.Debugf("Already has established connection for service: %+v", clientKey)
 		newCC.Close()
 		return cli, nil
 	}
-	logrus.Debugf("Put new gRPC connection to client store: %q", service)
+	logrus.Debugf("Put new gRPC connection to client store: %+v", clientKey)
 	newCliSet := &clientSet{
 		cc: newCC,
 	}
-	ps.clients[service] = newCliSet
+	ps.clients[clientKey] = newCliSet
 	return newCliSet, nil
 }
 
@@ -150,7 +160,7 @@ func New(opts ...ServerOpt) *ProxyServer {
 	ps := &ProxyServer{
 		resolver:   &defaultRuntimeServiceResolver{},
 		protoStore: &defaultRuntimeProtoStore{},
-		clients:    map[string]*clientSet{},
+		clients:    map[clientID]*clientSet{},
 	}
 	for _, opt := range opts {
 		opt(ps)
