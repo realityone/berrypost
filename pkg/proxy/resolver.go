@@ -70,6 +70,10 @@ func (crr chainedRuntimeResolver) Name() string {
 	return fmt.Sprintf("chained-resolver:%q", strings.Join(names, ">"))
 }
 
-func ChainResolver(in ...RuntimeServiceResolver) RuntimeServiceResolver {
-	return chainedRuntimeResolver{all: in}
+func ChainDefaultResolver(in ...RuntimeServiceResolver) RuntimeServiceResolver {
+	resolvers := []RuntimeServiceResolver{
+		defaultRuntimeServiceResolver{},
+	}
+	resolvers = append(resolvers, in...)
+	return chainedRuntimeResolver{all: resolvers}
 }
