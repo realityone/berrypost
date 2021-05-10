@@ -36,7 +36,7 @@ func (defaultRuntimeServiceResolver) ResolveOnce(ctx context.Context, req *Resol
 	}
 	switch parsed.Scheme {
 	case "tcp", "udp":
-		return req.UserDefinedTarget, nil
+		return parsed.Host, nil
 	default:
 		return "", ToNextResolver
 	}
