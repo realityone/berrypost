@@ -12,9 +12,6 @@ var setupCodeMirror = function () {
         mode: { name: "javascript", json: true },
     });
     window.requestBodyEditor.setSize('100%', '300px');
-    window.requestBodyEditor.on('change', (instance, changeObj) => {
-        GeneratePreviewCmdLine();
-    });
     window.previewEditor = CodeMirror.fromTextArea(preview, {
         lineNumbers: true,
         mode: "shell",
@@ -115,8 +112,17 @@ curl -X "POST" "${baseURL}${path}" \\
     window.previewEditor.setValue(curlCmdLine);
 };
 
+var setupPreviewTrigger = function () {
+    window.requestBodyEditor.on('change', (instance, changeObj) => {
+        GeneratePreviewCmdLine();
+    });
+    const targetInput = document.getElementById("target-addr");
+    targetInput.addEventListener('keyup', () => GeneratePreviewCmdLine());
+};
+
 window.addEventListener('load', setupCodeMirror);
 window.addEventListener('load', fillMethod);
 window.addEventListener('load', clickFirstMethod);
 window.addEventListener('load', setupClickSend);
 window.addEventListener('load', serviceMenuLiveSearch);
+window.addEventListener('load', setupPreviewTrigger);
