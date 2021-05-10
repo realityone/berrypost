@@ -61,9 +61,14 @@ var setupClickSend = function () {
         if (methodNameInput.value === "") {
             return
         }
+        const targetInput = document.getElementById("target-addr");
         fetch(invokePath(methodNameInput.value), {
             method: "POST",
             body: window.requestBodyEditor.getValue(),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Berrypost-Target': targetInput.value,
+            },
         }).then((response) => response.json())
             .then((data) => {
                 const prettyJSON = JSON.stringify(data, null, 2);
