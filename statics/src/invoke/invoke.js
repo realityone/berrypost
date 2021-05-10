@@ -107,7 +107,7 @@ var GeneratePreviewCmdLine = function () {
     const curlCmdLine = `## ${methodNameInput.value}
 curl -X "POST" "${baseURL}${path}" \\
     -H 'X-Berrypost-Target: ${targetInput.value}' \\
-    -H 'Content-Type: text/plain; charset=utf-8' \\
+    -H 'Content-Type: application/json' \\
     -d $'${body}'`;
     window.previewEditor.setValue(curlCmdLine);
 };
