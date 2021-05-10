@@ -272,7 +272,7 @@ func (m Management) Setup(s *server.Server) error {
 	r := s.Group("/management")
 	r.GET("/rediect-to-example", m.redirectToFirstService)
 	r.GET("/invoke", m.emptyInvoke)
-	r.GET("/invoke/:service-identifier", m.invoke)
+	r.GET("/invoke/*service-identifier", m.invoke)
 
 	rAPI := s.Group("/management/api")
 	rAPI.GET("/_intro", m.intro)
