@@ -113,16 +113,14 @@ curl -X "POST" "${baseURL}${path}" \\
 };
 
 var setupPreviewTrigger = function () {
-    window.requestBodyEditor.on('change', (instance, changeObj) => {
-        GeneratePreviewCmdLine();
-    });
+    window.requestBodyEditor.on('change', (instance, changeObj) => GeneratePreviewCmdLine());
     const targetInput = document.getElementById("target-addr");
     targetInput.addEventListener('keyup', () => GeneratePreviewCmdLine());
 };
 
 window.addEventListener('load', setupCodeMirror);
+window.addEventListener('load', setupPreviewTrigger);
 window.addEventListener('load', fillMethod);
-window.addEventListener('load', clickFirstMethod);
 window.addEventListener('load', setupClickSend);
 window.addEventListener('load', serviceMenuLiveSearch);
-window.addEventListener('load', setupPreviewTrigger);
+window.addEventListener('load', clickFirstMethod);
