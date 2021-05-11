@@ -69,6 +69,15 @@ html, body {
     overflow-x: hidden;
 }
 
+#request-action {
+    position: relative;
+}
+
+#request-action-badge {
+    position: absolute;
+    right: 0;
+}
+
 .request-status>.text-secondary {
     font-size: 50%;
     white-space: nowrap;
