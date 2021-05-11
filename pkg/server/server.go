@@ -128,8 +128,13 @@ func (s *Server) index(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "index.html", s.meta)
 }
 
+func (s *Server) favicon(ctx *gin.Context) {
+	ctx.Data(http.StatusOK, http.DetectContentType(berrypost.Icon), berrypost.Icon)
+}
+
 func (s *Server) setupRouter() {
 	s.GET("/", s.index)
+	s.GET("/favicon.ico", s.favicon)
 	s.GET("/api/_intro", s.intro)
 	s.StaticFS("/assets", http.FS(cacheablefs.Wrap(berrypost.DistFS)))
 
