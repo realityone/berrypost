@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/protobuf/jsonpb"
@@ -27,9 +26,6 @@ type ServerOpt func(*ProxyServer)
 type ProxyServer struct {
 	resolver   RuntimeServiceResolver
 	protoStore RuntimeProtoStore
-
-	clientLock sync.RWMutex
-	clients    map[clientID]*clientSet
 }
 
 type clientID struct {
@@ -37,17 +33,13 @@ type clientID struct {
 	target  string
 }
 
+func (cs *clientSet) Close() error {
+	return cs.cc.Close()
+}
+
 func (ps *ProxyServer) client(ctx *Context, service string) (*clientSet, error) {
 	userDefinedTarget, _ := GetUserDefinedTarget(ctx)
 	clientKey := clientID{service, userDefinedTarget}
-	logrus.Debugf("Try to dial gRPC connection to service: %+v", clientKey)
-	ps.clientLock.RLock()
-	cli, ok := ps.clients[clientKey]
-	ps.clientLock.RUnlock()
-	if ok {
-		logrus.Debugf("Got %+v gRPC connection from client store", clientKey)
-		return cli, nil
-	}
 
 	logrus.Debugf("Resolving service %+v to dial gRPC connection", clientKey)
 	target, err := ps.resolver.ResolveOnce(ctx, &ResolveOnceRequest{
@@ -58,24 +50,15 @@ func (ps *ProxyServer) client(ctx *Context, service string) (*clientSet, error) 
 		return nil, err
 	}
 
-	logrus.Debugf("Dial gRPC connection to service: %+v", clientKey)
+	logrus.Debugf("Dial gRPC connection to service: %+v with target: %q", clientKey, target)
 	newCC, err := grpc.DialContext(ctx, target, grpc.WithBlock(), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
-	ps.clientLock.Lock()
-	defer ps.clientLock.Unlock()
-	cli, ok = ps.clients[clientKey]
-	if ok {
-		logrus.Debugf("Already has established connection for service: %+v", clientKey)
-		newCC.Close()
-		return cli, nil
-	}
-	logrus.Debugf("Put new gRPC connection to client store: %+v", clientKey)
+
 	newCliSet := &clientSet{
 		cc: newCC,
 	}
-	ps.clients[clientKey] = newCliSet
 	return newCliSet, nil
 }
 
@@ -160,7 +143,6 @@ func New(opts ...ServerOpt) *ProxyServer {
 	ps := &ProxyServer{
 		resolver:   &defaultRuntimeServiceResolver{},
 		protoStore: &defaultRuntimeProtoStore{},
-		clients:    map[clientID]*clientSet{},
 	}
 	for _, opt := range opts {
 		opt(ps)
