@@ -71,6 +71,7 @@ html, body {
 
 .request-status>.text-secondary {
     font-size: 50%;
+    white-space: nowrap;
 }
 
 .request-status>.progress {
