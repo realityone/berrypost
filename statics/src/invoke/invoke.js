@@ -48,10 +48,13 @@ var invokePath = function (methodName) {
     return path.join("/invoke", methodName)
 };
 
-var startRequestSentAction = function (method) {
+var startRequestSentAction = function (serviceMethod, grpcMethodName) {
     cleanRequestActionBadge();
     const actionText = document.getElementById("request-action-text");
-    actionText.innerText = `Sent ${method}`;
+    actionText.innerText = `Sent ${serviceMethod}`;
+
+    const actionDescription = document.getElementById("request-action-description");
+    actionDescription.innerText = `Invoke ${grpcMethodName}`;
 };
 
 var cleanRequestActionBadge = function () {
