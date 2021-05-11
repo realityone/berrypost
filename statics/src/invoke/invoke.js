@@ -74,7 +74,7 @@ var onReceiveResponse = function (response, serviceMethod) {
     const actionSpan = document.createElement("span");
     actionSpan.id = "request-action-badge";
     actionSpan.innerText = badgeText;
-    actionSpan.classList.add("badge", "border", "float-end");
+    actionSpan.classList.add("badge", "border", "float-end", "mt-1");
     if ((response.status >= 200) && (response.status < 400)) {
         actionSpan.classList.add("border-success", "text-success");
     } else if ((response.status >= 400) && (response.status < 500)) {
