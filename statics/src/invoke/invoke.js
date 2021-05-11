@@ -67,14 +67,15 @@ var onReceiveResponse = function (response) {
     const badgeText = `${response.status} ${response.statusText}`;
     const actionText = document.getElementById("request-action-text");
     const actionSpan = document.createElement("span");
+    actionSpan.id = "request-action-badge";
     actionSpan.innerText = badgeText;
     actionSpan.classList.add("badge", "border", "float-end", "mt-1");
     if ((response.status >= 200) && (response.status < 400)) {
-        actionBadge.classList.add("border-success", "text-success");
+        actionSpan.classList.add("border-success", "text-success");
     } else if ((response.status >= 400) && (response.status < 500)) {
-        actionBadge.classList.add("border-warning", "text-warning");
+        actionSpan.classList.add("border-warning", "text-warning");
     } else {
-        actionBadge.classList.add("border-danger", "text-danger");
+        actionSpan.classList.add("border-danger", "text-danger");
     }
 
     actionText.appendChild(actionSpan);
