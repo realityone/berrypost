@@ -6,7 +6,7 @@
     {{range $_, $m := $s.Methods}}
     <a data-grpc-method-name='{{ $m.GRPCMethodName }}' data-input-schema='{{ $m.InputSchema }}'
         data-service-method='{{ $m.ServiceMethod }}' href="#"
-        class="service-method list-group-item list-group-item-action py-3" aria-current="true">
+        class="service-method list-group-item list-group-item-action py-3 border-bottom" aria-current="true">
         <div class="d-flex w-100 align-items-center justify-content-between">
             {{ $m.ServiceMethod }}
             <!-- <span class="dot bg-success"></span> -->
