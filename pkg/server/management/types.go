@@ -5,16 +5,15 @@ import (
 )
 
 type Method struct {
-	Name               string
-	FullyQualifiedName string
-	GRPCMethodName     string
-	InputSchema        string
+	Name           string
+	GRPCMethodName string
+	InputSchema    string
+	ServiceMethod  string
 }
 
 type Service struct {
-	Name               string
-	FullyQualifiedName string
-	Methods            []*Method
+	Name    string
+	Methods []*Method
 }
 
 type InvokePage struct {

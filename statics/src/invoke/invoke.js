@@ -29,7 +29,8 @@ var fillMethod = function () {
     for (const m of methods) {
         m.onclick = function () {
             const methodNameInput = document.getElementById("method-name");
-            methodNameInput.value = m.dataset.methodName;
+            methodNameInput.value = m.dataset.grpcMethodName;
+            methodNameInput.dataset.serviceMethod = m.dataset.serviceMethod;
             window.requestBodyEditor.setValue(m.dataset.inputSchema);
         }
     }
@@ -47,8 +48,14 @@ var invokePath = function (methodName) {
     return path.join("/invoke", methodName)
 };
 
-var updateStatusBar = function (response) {
+var startRequestSentAction = function (method) {
+    const actionBadge = document.getElementById("request-action-badge");
+    if (actionBadge) {
+        actionBadge.style.display = "none";
+    }
 
+    const actionText = document.getElementById("request-action-text");
+    actionText.innerText = `Sent ${method}`;
 };
 
 var setupClickSend = function () {
@@ -59,6 +66,8 @@ var setupClickSend = function () {
             return
         }
         const targetInput = document.getElementById("target-addr");
+
+        startRequestSentAction(methodNameInput.dataset.serviceMethod);
         fetch(invokePath(methodNameInput.value), {
             method: "POST",
             body: window.requestBodyEditor.getValue(),
@@ -66,14 +75,15 @@ var setupClickSend = function () {
                 'Content-Type': 'application/json',
                 'X-Berrypost-Target': targetInput.value,
             },
-        }).then((response) => response.json())
-            .then((data) => {
-                const prettyJSON = JSON.stringify(data, null, 2);
-                window.responseBodyEditor.setValue(prettyJSON);
-            }).catch((error) => {
-                const errorMessage = error.toString();
-                window.responseBodyEditor.setValue(errorMessage);
-            });
+        }).then((response) => {
+            response.json()
+        }).then((data) => {
+            const prettyJSON = JSON.stringify(data, null, 2);
+            window.responseBodyEditor.setValue(prettyJSON);
+        }).catch((error) => {
+            const errorMessage = error.toString();
+            window.responseBodyEditor.setValue(errorMessage);
+        });
     })
 };
 

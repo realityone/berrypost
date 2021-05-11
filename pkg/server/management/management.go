@@ -196,15 +196,14 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 	page.Services = make([]*Service, 0, len(fileProfile.ProtoPackage.FileDescriptor.GetServices()))
 	for _, s := range fileProfile.ProtoPackage.FileDescriptor.GetServices() {
 		ps := &Service{
-			Name:               s.GetName(),
-			FullyQualifiedName: s.GetFullyQualifiedName(),
+			Name: s.GetName(),
 		}
 		ps.Methods = make([]*Method, 0, len(s.GetMethods()))
 		for _, m := range s.GetMethods() {
 			pm := &Method{
-				Name:               m.GetName(),
-				GRPCMethodName:     fmt.Sprintf("/%s/%s", s.GetFullyQualifiedName(), m.GetName()),
-				FullyQualifiedName: m.GetFullyQualifiedName(),
+				Name:           m.GetName(),
+				GRPCMethodName: fmt.Sprintf("/%s/%s", s.GetFullyQualifiedName(), m.GetName()),
+				ServiceMethod:  fmt.Sprintf("%s.%s", s.GetName(), m.GetName()),
 			}
 			descMarshaler := jsonpb.Marshaler{
 				EmitDefaults: true,
