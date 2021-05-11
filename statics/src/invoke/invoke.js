@@ -49,13 +49,35 @@ var invokePath = function (methodName) {
 };
 
 var startRequestSentAction = function (method) {
-    const actionBadge = document.getElementById("request-action-badge");
-    if (actionBadge) {
-        actionBadge.style.display = "none";
-    }
-
+    cleanRequestActionBadge();
     const actionText = document.getElementById("request-action-text");
     actionText.innerText = `Sent ${method}`;
+};
+
+var cleanRequestActionBadge = function () {
+    const actionBadge = document.getElementById("request-action-badge");
+    if (actionBadge) {
+        actionBadge.parentElement.removeChild(actionBadge);
+    }
+};
+
+var onReceiveResponse = function (response) {
+    cleanRequestActionBadge();
+
+    const badgeText = `${response.status} ${response.statusText}`;
+    const actionText = document.getElementById("request-action-text");
+    const actionSpan = document.createElement("span");
+    actionSpan.innerText = badgeText;
+    actionSpan.classList.add("badge border float-end mt-1");
+    if ((response.status >= 200) && (response.status < 400)) {
+        actionBadge.classList.add("border-success text-success");
+    } else if ((response.status >= 400) && (response.status < 500)) {
+        actionBadge.classList.add("border-warning text-warning");
+    } else {
+        actionBadge.classList.add("border-danger text-danger");
+    }
+
+    actionText.appendChild(actionSpan);
 };
 
 var setupClickSend = function () {
@@ -63,7 +85,7 @@ var setupClickSend = function () {
     sendBtn.addEventListener('click', () => {
         const methodNameInput = document.getElementById("method-name");
         if (methodNameInput.value === "") {
-            return
+            return;
         }
         const targetInput = document.getElementById("target-addr");
 
@@ -76,7 +98,8 @@ var setupClickSend = function () {
                 'X-Berrypost-Target': targetInput.value,
             },
         }).then((response) => {
-            response.json()
+            onReceiveResponse(response);
+            return response.json();
         }).then((data) => {
             const prettyJSON = JSON.stringify(data, null, 2);
             window.responseBodyEditor.setValue(prettyJSON);
