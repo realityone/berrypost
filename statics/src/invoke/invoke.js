@@ -51,7 +51,7 @@ var invokePath = function (methodName) {
 var startRequestSentAction = function (serviceMethod, grpcMethodName) {
     cleanRequestActionBadge();
     const actionText = document.getElementById("request-action-text");
-    actionText.innerText = `Sent ${serviceMethod}`;
+    actionText.innerText = `Processing ${serviceMethod}`;
 
     const actionDescription = document.getElementById("request-action-description");
     actionDescription.innerText = `Invoke ${grpcMethodName}`;
@@ -64,11 +64,13 @@ var cleanRequestActionBadge = function () {
     }
 };
 
-var onReceiveResponse = function (response) {
+var onReceiveResponse = function (response, serviceMethod) {
     cleanRequestActionBadge();
 
-    const badgeText = `${response.status} ${response.statusText}`;
     const actionText = document.getElementById("request-action-text");
+    actionText.innerText = `Sent ${serviceMethod}`;
+
+    const badgeText = `${response.status} ${response.statusText}`;
     const actionSpan = document.createElement("span");
     actionSpan.id = "request-action-badge";
     actionSpan.innerText = badgeText;
@@ -105,7 +107,7 @@ var setupClickSend = function () {
                 'X-Berrypost-Target': targetInput.value,
             },
         }).then((response) => {
-            onReceiveResponse(response);
+            onReceiveResponse(response, methodNameInput.dataset.serviceMethod);
             return response.json();
         }).then((data) => {
             const prettyJSON = JSON.stringify(data, null, 2);
