@@ -100,6 +100,7 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer cli.Close()
 
 	req, reply, err := ps.protoStore.GetMethodMessage(ctx, service, method)
 	if err != nil {
