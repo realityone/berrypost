@@ -24,8 +24,9 @@ func jsonErrorHandlerT(errType gin.ErrorType) gin.HandlerFunc {
 			return
 		}
 		response := &berrypostErrorResponse{
-			Code:   "internal_server_error",
-			Detail: detectedErrors.JSON(),
+			Code:    "internal_server_error",
+			Message: "Internal Server Error",
+			Detail:  detectedErrors.JSON(),
 		}
 		c.JSON(http.StatusBadRequest, response)
 		c.Abort()
