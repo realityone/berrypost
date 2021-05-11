@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/realityone/berrypost/pkg/protohelper"
 	"github.com/realityone/berrypost/pkg/server"
+	"github.com/realityone/berrypost/pkg/server/contrib/errorhandler"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
@@ -135,7 +136,7 @@ func (p *ProxyServer) Meta() map[string]string {
 }
 
 func (p *ProxyServer) Setup(s *server.Server) error {
-	s.POST("/invoke/:service/:method", p.ServeHTTP)
+	s.POST("/invoke/:service/:method", errorhandler.JSONErrorHandler(), p.ServeHTTP)
 	return nil
 }
 
