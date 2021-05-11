@@ -93,7 +93,10 @@ var setupClickSend = function () {
         }
         const targetInput = document.getElementById("target-addr");
 
-        startRequestSentAction(methodNameInput.dataset.serviceMethod);
+        startRequestSentAction(
+            methodNameInput.dataset.serviceMethod,
+            methodNameInput.value,
+        );
         fetch(invokePath(methodNameInput.value), {
             method: "POST",
             body: window.requestBodyEditor.getValue(),
