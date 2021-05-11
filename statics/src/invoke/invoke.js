@@ -68,13 +68,13 @@ var onReceiveResponse = function (response) {
     const actionText = document.getElementById("request-action-text");
     const actionSpan = document.createElement("span");
     actionSpan.innerText = badgeText;
-    actionSpan.classList.add("badge border float-end mt-1");
+    actionSpan.classList.add("badge", "border", "float-end", "mt-1");
     if ((response.status >= 200) && (response.status < 400)) {
-        actionBadge.classList.add("border-success text-success");
+        actionBadge.classList.add("border-success", "text-success");
     } else if ((response.status >= 400) && (response.status < 500)) {
-        actionBadge.classList.add("border-warning text-warning");
+        actionBadge.classList.add("border-warning", "text-warning");
     } else {
-        actionBadge.classList.add("border-danger text-danger");
+        actionBadge.classList.add("border-danger", "text-danger");
     }
 
     actionText.appendChild(actionSpan);
