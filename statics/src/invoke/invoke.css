@@ -97,7 +97,7 @@ body {
 /* for Safari only */
 
 @media not all and (min-resolution:.001dpcm) {
-    @media {
+    @media all {
         .code-preview>.card>.card-body,
         .response-panel>.card>.card-body {
             position: relative;
