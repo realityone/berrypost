@@ -1,8 +1,8 @@
-html, body {
+html,
+body {
     height: 100%;
     width: 100%;
     font-size: 14px;
-    /* overflow: hidden; */
 }
 
 .dot {
@@ -12,15 +12,16 @@ html, body {
     display: inline-block;
 }
 
-.status-bar, .status-bar > * {
+.status-bar,
+.status-bar>* {
     height: 44px;
     min-height: 44px;
 }
 
-.main-panel, 
-.main-panel > .row, 
-.method-list, 
-.method-list > .list-group, 
+.main-panel,
+.main-panel>.row,
+.method-list,
+.method-list>.list-group,
 .request-panel,
 .response-panel {
     height: calc(100vh - 44px);
@@ -40,7 +41,8 @@ html, body {
     font-size: 10px;
 }
 
-.code-preview, .code-preview>* {
+.code-preview,
+.code-preview>* {
     height: 100%;
     overflow: hidden;
 }
@@ -89,4 +91,17 @@ html, body {
 
 .request-status>.progress>.progress-bar {
     width: 75%;
+}
+
+
+/* for Safari only */
+
+@media not all and (min-resolution:.001dpcm) {
+    @media {
+        .code-preview>.card>.card-body,
+        .response-panel>.card>.card-body {
+            position: relative;
+            height: 100%;
+        }
+    }
 }
