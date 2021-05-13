@@ -6,7 +6,7 @@ import 'codemirror/mode/javascript/javascript.js';
 import 'codemirror/mode/shell/shell.js';
 import path from 'path-browserify';
 
-var setupCodeMirror = function () {
+var setupCodeMirror = function() {
     window.requestBodyEditor = CodeMirror.fromTextArea(requestBody, {
         lineNumbers: true,
         mode: { name: "javascript", json: true },
@@ -24,10 +24,10 @@ var setupCodeMirror = function () {
     window.responseBodyEditor.setSize('100%', '100%');
 };
 
-var fillMethod = function () {
+var fillMethod = function() {
     const methods = document.getElementsByClassName("service-method");
     for (const m of methods) {
-        m.onclick = function () {
+        m.onclick = function() {
             const methodNameInput = document.getElementById("method-name");
             methodNameInput.value = m.dataset.grpcMethodName;
             methodNameInput.dataset.serviceMethod = m.dataset.serviceMethod;
@@ -36,7 +36,7 @@ var fillMethod = function () {
     }
 };
 
-var clickFirstMethod = function () {
+var clickFirstMethod = function() {
     const methods = document.getElementsByClassName("service-method");
     for (const m of methods) {
         m.click();
@@ -44,11 +44,11 @@ var clickFirstMethod = function () {
     }
 };
 
-var invokePath = function (methodName) {
+var invokePath = function(methodName) {
     return path.join("/invoke", methodName)
 };
 
-var startRequestSentAction = function (serviceMethod, grpcMethodName) {
+var startRequestSentAction = function(serviceMethod, grpcMethodName) {
     cleanRequestActionBadge();
     const actionText = document.getElementById("request-action-text");
     actionText.innerText = `Processing ${serviceMethod}`;
@@ -57,20 +57,23 @@ var startRequestSentAction = function (serviceMethod, grpcMethodName) {
     actionDescription.innerText = `Invoke ${grpcMethodName}`;
 };
 
-var cleanRequestActionBadge = function () {
+var cleanRequestActionBadge = function() {
     const actionBadge = document.getElementById("request-action-badge");
     if (actionBadge) {
         actionBadge.parentElement.removeChild(actionBadge);
     }
 };
 
-var onReceiveResponse = function (response, serviceMethod) {
+var onReceiveResponse = function(response, serviceMethod) {
     cleanRequestActionBadge();
 
     const actionText = document.getElementById("request-action-text");
     actionText.innerText = `Sent ${serviceMethod}`;
 
-    const badgeText = `${response.status} ${response.statusText}`;
+    var badgeText = `${response.status}`;
+    if ((response.status >= 200) && (response.status < 300)) {
+        badgeText = `${response.status} ${response.statusText}`
+    }
     const actionSpan = document.createElement("span");
     actionSpan.id = "request-action-badge";
     actionSpan.innerText = badgeText;
@@ -86,7 +89,7 @@ var onReceiveResponse = function (response, serviceMethod) {
     actionText.appendChild(actionSpan);
 };
 
-var setupClickSend = function () {
+var setupClickSend = function() {
     const sendBtn = document.getElementById("send-button");
     sendBtn.addEventListener('click', () => {
         const methodNameInput = document.getElementById("method-name");
@@ -119,7 +122,7 @@ var setupClickSend = function () {
     })
 };
 
-var serviceMenuLiveSearch = function () {
+var serviceMenuLiveSearch = function() {
     const searchInput = document.getElementById("serviceMenuSearch");
     searchInput.addEventListener('keyup', () => {
         const filter = searchInput.value;
@@ -136,7 +139,7 @@ var serviceMenuLiveSearch = function () {
     });
 };
 
-var GeneratePreviewCmdLine = function () {
+var GeneratePreviewCmdLine = function() {
     const methodNameInput = document.getElementById("method-name");
     if (methodNameInput.value === "") {
         return;
@@ -154,7 +157,7 @@ curl -X "POST" "${baseURL}${path}" \\
     window.previewEditor.setValue(curlCmdLine);
 };
 
-var setupPreviewTrigger = function () {
+var setupPreviewTrigger = function() {
     window.requestBodyEditor.on('change', (instance, changeObj) => GeneratePreviewCmdLine());
     const targetInput = document.getElementById("target-addr");
     targetInput.addEventListener('keyup', () => GeneratePreviewCmdLine());
