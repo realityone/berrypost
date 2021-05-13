@@ -100,7 +100,6 @@ body {
     @media all {
         .code-preview>.card>.card-body,
         .response-panel>.card>.card-body {
-            position: relative;
             height: 100%;
         }
     }
