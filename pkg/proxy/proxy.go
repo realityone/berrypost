@@ -82,8 +82,10 @@ func (ps *ProxyServer) ServeHTTP(ctx *gin.Context) {
 	}
 
 	marshaler := &jsonpb.Marshaler{
-		AnyResolver: AsContextedAnyResolver(ctx, ps.protoStore),
-		Indent:      "    ",
+		AnyResolver: protohelper.WrappedAnyResolver{
+			AnyResolver: AsContextedAnyResolver(ctx, ps.protoStore),
+		},
+		Indent: "    ",
 	}
 	if err := marshaler.Marshal(ctx.Writer, reply); err != nil {
 		logrus.Errorf("Failed to marshal reply on method: %q: %+v", invokeCtx.serviceMethod, err)
@@ -119,7 +121,9 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
 	})
 
 	unmarshaler := jsonpb.Unmarshaler{
-		AnyResolver: AsContextedAnyResolver(ctx, ps.protoStore),
+		AnyResolver: protohelper.WrappedAnyResolver{
+			AnyResolver: AsContextedAnyResolver(ctx, ps.protoStore),
+		},
 	}
 	if err := unmarshaler.Unmarshal(ctx.req.Body, req); err != nil {
 		return nil, errors.Errorf("Failed to unmarshal json to request message: %+v", err)
