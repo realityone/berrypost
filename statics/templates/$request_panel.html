@@ -4,16 +4,14 @@
         <div class="input-group-prepend">
             <span class="input-group-text text-primary">Target</span>
         </div>
-        <input id="target-addr" type="text" class="form-control" placeholder="tcp://127.0.0.1:9000"
-            value="{{ .PreferTarget }}">
+        <input id="target-addr" type="text" class="form-control" placeholder="tcp://127.0.0.1:9000" value="{{ .PreferTarget }}">
     </div>
 
     <div class="input-group mb-3 mt-3">
         <div class="input-group-prepend">
             <span class="input-group-text text-primary">Method</span>
         </div>
-        <input id="method-name" type="text" class="form-control" placeholder="/<package>.<service>/<method>" value=""
-            disabled>
+        <input id="method-name" type="text" class="form-control" placeholder="/<package>.<service>/<method>" value="" disabled>
         <button id="send-button" class="btn btn-outline-success" type="button">Send</button>
     </div>
 </div>
@@ -21,18 +19,45 @@
 <div class="request-editor pt-2 border-bottom pb-2">
     <div class="card">
         <div class="card-header">
-            <ul class="nav nav-tabs card-header-tabs">
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="#">Metadata</a>
-                </li> -->
-                <li class="nav-item">
-                    <a class="nav-link active" aria-current="true" href="#">Body</a>
+            <ul class="nav nav-tabs card-header-tabs" id="request-editor-nav" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" id="metadata-tab" data-bs-toggle="tab" data-bs-target="#metadata" href="#metadata" role="tab" aria-controls="metadata" aria-selected="false">Metadata</a>
+                </li>
+
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link active" id="body-tab" data-bs-toggle="tab" data-bs-target="#body" href="#body" role="tab" aria-controls="body" aria-selected="true">Body</a>
                 </li>
             </ul>
         </div>
+
         <div class="card-body">
-            <div class="form-group">
-                <textarea class="form-control" id="requestBody"></textarea>
+            <div class="tab-content">
+                <div class="tab-pane" id="metadata" role="tabpanel" aria-labelledby="metadata-tab">
+                    <table id="metadata-table" class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col"></th>
+                                <th scope="col">Header</th>
+                                <th scope="col">Value</th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type="checkbox" name="enable" hidden></td>
+                                <td><input type="text" placeholder="Add Header Name" name="name" class="border-0 border-bottom"></td>
+                                <td><input type="text" placeholder="Add Header Value" name="value" class="border-0 border-bottom"></td>
+                                <td><span class="delete-metadata"><i class="bi bi-dash-circle"></i></span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="tab-pane active" id="body" role="tabpanel" aria-labelledby="body-tab">
+                    <div class="form-group">
+                        <textarea class="form-control" id="requestBody"></textarea>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -93,6 +93,14 @@ body {
     width: 75%;
 }
 
+#metadata>.table {
+    color: gray;
+}
+
+.delete-metadata {
+    cursor: pointer;
+}
+
 
 /* for Safari only */
 
