@@ -139,6 +139,21 @@ var serviceMenuLiveSearch = function() {
     });
 };
 
+var metadataHeaderArgs = function(metadataTable) {
+    var args = [""];
+    for (const row of Array.from(metadataTable.rows).slice(1)) {
+        const inputs = row.getElementsByTagName("input");
+        const enabledCheckbox = inputs[0];
+        const nameInput = inputs[1];
+        const valueInput = inputs[2];
+        if (!enabledCheckbox.checked) {
+            continue;
+        }
+        args.push(`    -H 'X-Berrypost-Md-${nameInput.value}: ${valueInput.value}'`)
+    }
+    return args.join("\n");
+}
+
 var GeneratePreviewCmdLine = function() {
     const methodNameInput = document.getElementById("method-name");
     if (methodNameInput.value === "") {
@@ -148,11 +163,13 @@ var GeneratePreviewCmdLine = function() {
     const path = invokePath(methodNameInput.value);
     const body = window.requestBodyEditor.getValue();
     const targetInput = document.getElementById("target-addr");
+    const metadataTable = document.getElementById("metadata-table");
+    const metadataHeaderString = metadataHeaderArgs(metadataTable);
 
     const curlCmdLine = `## ${methodNameInput.value}
 curl -X "POST" "${baseURL}${path}" \\
     -H 'X-Berrypost-Target: ${targetInput.value}' \\
-    -H 'Content-Type: application/json' \\
+    -H 'Content-Type: application/json' ${metadataHeaderString} \\
     -d $'${body}'`;
     window.previewEditor.setValue(curlCmdLine);
 };
@@ -163,9 +180,47 @@ var setupPreviewTrigger = function() {
     targetInput.addEventListener('keyup', () => GeneratePreviewCmdLine());
 };
 
+var setupRequestEditor = function() {
+    const navList = document.getElementById("request-editor-nav");
+    const links = navList.getElementsByTagName("a");
+    for (const a of links) {
+        a.addEventListener('click', function(e) {
+            e.preventDefault();
+        });
+    }
+
+    const metadataTable = document.getElementById("metadata-table");
+    metadataTable.addEventListener('input', (e) => {
+        if (e.target.name !== "name") {
+            return
+        }
+        const row = e.target.parentElement.parentElement;
+        if (row.rowIndex === (metadataTable.rows.length - 1)) {
+            const newRow = metadataTable.insertRow();
+            newRow.innerHTML = row.innerHTML;
+            const enableCheckbox = newRow.cells[0].getElementsByTagName("input")[0];
+            enableCheckbox.setAttribute("hidden", "");
+            enableCheckbox.removeAttribute("checked");
+        }
+        const enableCheckbox = row.cells[0].getElementsByTagName("input")[0];
+        enableCheckbox.setAttribute("checked", "");
+        enableCheckbox.removeAttribute("hidden");
+    });
+    metadataTable.addEventListener('input', () => GeneratePreviewCmdLine());
+    metadataTable.addEventListener('click', (e) => {
+        if (e.target.parentElement.classList.contains("delete-metadata")) {
+            const row = e.target.parentElement.parentElement.parentElement;
+            if (row.rowIndex !== 1) {
+                metadataTable.deleteRow(row.rowIndex);
+            }
+        }
+    });
+};
+
 window.addEventListener('load', setupCodeMirror);
 window.addEventListener('load', setupPreviewTrigger);
 window.addEventListener('load', fillMethod);
 window.addEventListener('load', setupClickSend);
 window.addEventListener('load', serviceMenuLiveSearch);
 window.addEventListener('load', clickFirstMethod);
+window.addEventListener('load', setupRequestEditor);

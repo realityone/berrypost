@@ -14,6 +14,7 @@ import (
 	"github.com/realityone/berrypost/pkg/server/contrib/errorhandler"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 type clientSet struct {
@@ -94,6 +95,22 @@ func (ps *ProxyServer) ServeHTTP(ctx *gin.Context) {
 	}
 }
 
+func extractIncommingGRPCMetadata(header http.Header) metadata.MD {
+	prefix := http.CanonicalHeaderKey("X-Berrypost-Md-")
+	out := metadata.MD{}
+	for k, vs := range header {
+		if !strings.HasPrefix(k, prefix) {
+			continue
+		}
+		name := strings.TrimPrefix(k, prefix)
+		if name == "" {
+			continue
+		}
+		out.Append(name, vs...)
+	}
+	return out
+}
+
 func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
 	service, method, err := splitServiceMethod(ctx.serviceMethod)
 	if err != nil {
@@ -129,7 +146,10 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
 		return nil, errors.Errorf("Failed to unmarshal json to request message: %+v", err)
 	}
 
-	if err := cli.cc.Invoke(ctx, ctx.serviceMethod, req, reply); err != nil {
+	toForward := extractIncommingGRPCMetadata(ctx.req.Header)
+	invokeCtx := metadata.NewOutgoingContext(ctx, toForward)
+	replyMD := metadata.MD{}
+	if err := cli.cc.Invoke(invokeCtx, ctx.serviceMethod, req, reply, grpc.Header(&replyMD)); err != nil {
 		return nil, err
 	}
 	return reply, nil
