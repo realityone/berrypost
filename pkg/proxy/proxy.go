@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"strings"
@@ -95,7 +96,10 @@ func (ps *ProxyServer) ServeHTTP(ctx *gin.Context) {
 	}
 }
 
-func extractIncommingGRPCMetadata(header http.Header) metadata.MD {
+func extractIncommingGRPCMetadata(header http.Header) (metadata.MD, error) {
+	const (
+		base64Prefix = "base64://"
+	)
 	prefix := http.CanonicalHeaderKey("X-Berrypost-Md-")
 	out := metadata.MD{}
 	for k, vs := range header {
@@ -106,9 +110,22 @@ func extractIncommingGRPCMetadata(header http.Header) metadata.MD {
 		if name == "" {
 			continue
 		}
-		out.Append(name, vs...)
+		parsed := make([]string, 0, len(vs))
+		for _, v := range vs {
+			if strings.HasPrefix(v, base64Prefix) {
+				v = strings.TrimPrefix(v, base64Prefix)
+				decoded, err := base64.StdEncoding.DecodeString(v)
+				if err != nil {
+					return nil, errors.Wrapf(err, "Invalid base64 string: %s:%+v", k, v)
+				}
+				parsed = append(parsed, string(decoded))
+				continue
+			}
+			parsed = append(parsed, v)
+		}
+		out.Append(name, parsed...)
 	}
-	return out
+	return out, nil
 }
 
 func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
@@ -146,7 +163,10 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
 		return nil, errors.Errorf("Failed to unmarshal json to request message: %+v", err)
 	}
 
-	toForward := extractIncommingGRPCMetadata(ctx.req.Header)
+	toForward, err := extractIncommingGRPCMetadata(ctx.req.Header)
+	if err != nil {
+		return nil, errors.Wrap(err, "extract metadata")
+	}
 	invokeCtx := metadata.NewOutgoingContext(ctx, toForward)
 	replyMD := metadata.MD{}
 	if err := cli.cc.Invoke(invokeCtx, ctx.serviceMethod, req, reply, grpc.Header(&replyMD)); err != nil {

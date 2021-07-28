@@ -97,6 +97,22 @@ var setupClickSend = function() {
             return;
         }
         const targetInput = document.getElementById("target-addr");
+        const metadataTable = document.getElementById("metadata-table");
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-Berrypost-Target': targetInput.value,
+        };
+        for (const row of Array.from(metadataTable.rows).slice(1)) {
+            const inputs = row.getElementsByTagName("input");
+            const enabledCheckbox = inputs[0];
+            const nameInput = inputs[1];
+            const valueInput = inputs[2];
+            if (!enabledCheckbox.checked) {
+                continue;
+            }
+            headers[`X-Berrypost-Md-${nameInput.value}`] = valueInput.value;
+        }
 
         startRequestSentAction(
             methodNameInput.dataset.serviceMethod,
@@ -105,10 +121,7 @@ var setupClickSend = function() {
         fetch(invokePath(methodNameInput.value), {
             method: "POST",
             body: window.requestBodyEditor.getValue(),
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Berrypost-Target': targetInput.value,
-            },
+            headers: headers,
         }).then((response) => {
             onReceiveResponse(response, methodNameInput.dataset.serviceMethod);
             return response.json();
@@ -149,7 +162,7 @@ var metadataHeaderArgs = function(metadataTable) {
         if (!enabledCheckbox.checked) {
             continue;
         }
-        args.push(`    -H 'X-Berrypost-Md-${nameInput.value}: ${valueInput.value}'`)
+        args.push(`    -H 'X-Berrypost-Md-${nameInput.value}: ${valueInput.value}' \\`)
     }
     return args.join("\n");
 }
@@ -169,7 +182,7 @@ var GeneratePreviewCmdLine = function() {
     const curlCmdLine = `## ${methodNameInput.value}
 curl -X "POST" "${baseURL}${path}" \\
     -H 'X-Berrypost-Target: ${targetInput.value}' \\
-    -H 'Content-Type: application/json' ${metadataHeaderString} \\
+    -H 'Content-Type: application/json' \\${metadataHeaderString}
     -d $'${body}'`;
     window.previewEditor.setValue(curlCmdLine);
 };
