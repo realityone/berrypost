@@ -96,10 +96,25 @@ func (ps *ProxyServer) ServeHTTP(ctx *gin.Context) {
 	}
 }
 
+func decodeBinHeader(v string) ([]byte, error) {
+	if len(v)%4 == 0 {
+		// Input was padded, or padding was not necessary.
+		return base64.StdEncoding.DecodeString(v)
+	}
+	return base64.RawStdEncoding.DecodeString(v)
+}
+
+func decodeMetadataHeader(k, v string) (string, error) {
+	const binHdrSuffix = "-bin"
+	if strings.HasSuffix(k, binHdrSuffix) {
+		b, err := decodeBinHeader(v)
+		return string(b), err
+	}
+	return v, nil
+}
+
 func extractIncommingGRPCMetadata(header http.Header) (metadata.MD, error) {
-	const (
-		base64Prefix = "base64://"
-	)
+	const base64Prefix = "base64://"
 	prefix := http.CanonicalHeaderKey("X-Berrypost-Md-")
 	out := metadata.MD{}
 	for k, vs := range header {
@@ -114,7 +129,7 @@ func extractIncommingGRPCMetadata(header http.Header) (metadata.MD, error) {
 		for _, v := range vs {
 			if strings.HasPrefix(v, base64Prefix) {
 				v = strings.TrimPrefix(v, base64Prefix)
-				decoded, err := base64.StdEncoding.DecodeString(v)
+				decoded, err := decodeMetadataHeader(k, v)
 				if err != nil {
 					return nil, errors.Wrapf(err, "Invalid base64 string: %s:%+v", k, v)
 				}

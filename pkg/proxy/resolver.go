@@ -54,7 +54,7 @@ func (crr chainedRuntimeResolver) ResolveOnce(ctx context.Context, req *ResolveO
 	for _, r := range crr.all {
 		addr, err := r.ResolveOnce(ctx, req)
 		if err != nil {
-			logrus.Warn("Failed to resolve %+v with resolver %q: %+v", req, r.Name(), err)
+			logrus.Warnf("Failed to resolve %+v with resolver %q: %+v", req, r.Name(), err)
 			continue
 		}
 		return addr, nil
