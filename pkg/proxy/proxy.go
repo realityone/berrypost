@@ -105,7 +105,7 @@ func decodeBinHeader(v string) ([]byte, error) {
 }
 
 func decodeMetadataHeader(k, v string) (string, error) {
-	const binHdrSuffix = "-bin"
+	const binHdrSuffix = "-Bin"
 	if strings.HasSuffix(k, binHdrSuffix) {
 		b, err := decodeBinHeader(v)
 		return string(b), err
