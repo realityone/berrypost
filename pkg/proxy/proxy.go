@@ -44,8 +44,14 @@ func (ps *ProxyServer) client(ctx *Context, service string) (*clientSet, error) 
 	userDefinedTarget, _ := GetUserDefinedTarget(ctx)
 	clientKey := clientID{service, userDefinedTarget}
 
+	toForward, err := extractIncommingGRPCMetadata(ctx.req.Header)
+	if err != nil {
+		return nil, errors.Wrap(err, "extract metadata")
+	}
+	dialCtx := metadata.NewOutgoingContext(ctx, toForward)
+
 	logrus.Debugf("Resolving service %+v to dial gRPC connection", clientKey)
-	target, err := ps.resolver.ResolveOnce(ctx, &ResolveOnceRequest{
+	target, err := ps.resolver.ResolveOnce(dialCtx, &ResolveOnceRequest{
 		ServiceFullyQualifiedName: service,
 		UserDefinedTarget:         userDefinedTarget,
 	})
@@ -54,7 +60,7 @@ func (ps *ProxyServer) client(ctx *Context, service string) (*clientSet, error) 
 	}
 
 	logrus.Debugf("Dial gRPC connection to service: %+v with target: %q", clientKey, target)
-	newCC, err := grpc.DialContext(ctx, target, grpc.WithBlock(), grpc.WithInsecure())
+	newCC, err := grpc.DialContext(dialCtx, target, grpc.WithBlock(), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +161,13 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
 	}
 	defer cli.Close()
 
-	req, reply, err := ps.protoStore.GetMethodMessage(ctx, service, method)
+	toForward, err := extractIncommingGRPCMetadata(ctx.req.Header)
+	if err != nil {
+		return nil, errors.Wrap(err, "extract metadata")
+	}
+	invokeCtx := metadata.NewOutgoingContext(ctx, toForward)
+
+	req, reply, err := ps.protoStore.GetMethodMessage(invokeCtx, service, method)
 	if err != nil {
 		return nil, err
 	}
@@ -171,18 +183,13 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
 
 	unmarshaler := jsonpb.Unmarshaler{
 		AnyResolver: protohelper.WrappedAnyResolver{
-			AnyResolver: AsContextedAnyResolver(ctx, ps.protoStore),
+			AnyResolver: AsContextedAnyResolver(invokeCtx, ps.protoStore),
 		},
 	}
 	if err := unmarshaler.Unmarshal(ctx.req.Body, req); err != nil {
 		return nil, errors.Errorf("Failed to unmarshal json to request message: %+v", err)
 	}
 
-	toForward, err := extractIncommingGRPCMetadata(ctx.req.Header)
-	if err != nil {
-		return nil, errors.Wrap(err, "extract metadata")
-	}
-	invokeCtx := metadata.NewOutgoingContext(ctx, toForward)
 	replyMD := metadata.MD{}
 	if err := cli.cc.Invoke(invokeCtx, ctx.serviceMethod, req, reply, grpc.Header(&replyMD)); err != nil {
 		return nil, err
