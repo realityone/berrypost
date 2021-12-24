@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/assets/statics/dist/vendor.bundle.js"></script>
+  <link rel="icon" href="/favicon.ico">
+  <title>berrypost-admin</title>
+</head>
+<body class="bg-light">
+
+<div class="container">
+  <main>
+    <div class="py-5 text-center">
+      <h2>Setting</h2>
+      <p class="lead">setting</p>
+    </div>
+    <div class="row justify-content-md-center">
+      <div class="col-md-7 col-lg-8">
+        <h4 class="mb-3">Proto configuration</h4>
+        <form class="needs-validation" novalidate>
+          <div class="row g-3">
+            <div class="col-12">
+              <label for="address" class="form-label">Target</label>
+              <input type="text" class="form-control" id="address" placeholder="discovery" required>
+              <div class="invalid-feedback">
+                Please enter your target.
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <button class="w-100 btn btn-primary btn-lg" type="submit">Update</button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+</div>
+</body>
+</html>

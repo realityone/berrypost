@@ -21,6 +21,7 @@ type InvokePage struct {
 	ServiceIdentifier string
 	PackageName       string
 	PreferTarget      string
+	DefaultTarget     string
 	Services          []*Service
 	ProtoFiles        []*ProtoFileMeta
 }

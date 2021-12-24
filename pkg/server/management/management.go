@@ -11,6 +11,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/pkg/errors"
+	"github.com/realityone/berrypost/pkg/etcd"
 	"github.com/realityone/berrypost/pkg/server"
 	"github.com/sirupsen/logrus"
 	"k8s.io/kube-openapi/pkg/util/sets"
@@ -77,6 +78,26 @@ func (m Management) listServiceAlias(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, alias)
+}
+
+func (m Management) addressUpdate(ctx *gin.Context) {
+
+	type KDRespBody struct {
+		TargetAddr string `json:"targetAddrInput"`
+		ProtoName  string `json:"serviceInput"`
+	}
+	var reqInfo KDRespBody
+	if err := ctx.BindJSON(&reqInfo); err != nil {
+		ctx.Error(err)
+		return
+	}
+	reqInfo.ProtoName = strings.Replace(reqInfo.ProtoName, " ", "", -1)
+	reqInfo.TargetAddr = strings.Replace(reqInfo.TargetAddr, " ", "", -1)
+	err := etcd.Dao.Put(reqInfo.ProtoName, reqInfo.TargetAddr)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, nil)
+	}
+	ctx.JSON(http.StatusOK, nil)
 }
 
 // find proto file by service identifier in this order:
@@ -192,6 +213,10 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 	if ok {
 		page.PreferTarget = preferTarget
 	}
+	defaultTarget, ok := fileProfile.Common.Annotation[AppBerrypostManagementInvokeDefaultTarget]
+	if ok {
+		page.DefaultTarget = defaultTarget
+	}
 
 	page.Services = make([]*Service, 0, len(fileProfile.ProtoPackage.FileDescriptor.GetServices()))
 	for _, s := range fileProfile.ProtoPackage.FileDescriptor.GetServices() {
@@ -257,6 +282,7 @@ func (m Management) invoke(ctx *gin.Context) {
 		ctx.Error(err)
 		return
 	}
+	fmt.Println(page)
 	ctx.HTML(http.StatusOK, "invoke.html", page)
 }
 
@@ -265,6 +291,66 @@ func (m Management) emptyInvoke(ctx *gin.Context) {
 		Meta:       m.server.Meta(),
 		ProtoFiles: m.allProtoFiles(ctx),
 	})
+}
+
+func (m Management) admin(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "admin.html", nil)
+}
+
+func (m Management) emptyAdmin(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "admin.html", nil)
+}
+
+func (m Management) pathConfig(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "pathConfig.html", nil)
+}
+
+func (m Management) emptyPath(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "config.html", &InvokePage{
+		Meta:       m.server.Meta(),
+		ProtoFiles: m.allProtoFiles(ctx),
+	})
+}
+
+func (m Management) path(ctx *gin.Context) {
+	serviceIdentifier := ctx.Param("service-identifier")
+	if serviceIdentifier == "" {
+		ctx.HTML(http.StatusOK, "pathConfig.html", &InvokePage{
+			Meta:       m.server.Meta(),
+			ProtoFiles: m.allProtoFiles(ctx),
+		})
+		return
+	}
+	serviceIdentifier = strings.TrimPrefix(serviceIdentifier, "/")
+	page, err := m.makeInvokePage(ctx, serviceIdentifier)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	ctx.HTML(http.StatusOK, "config.html", page)
+}
+
+func (m Management) emptyDashboard(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "dashboard.html", &InvokePage{
+		Meta:       m.server.Meta(),
+		ProtoFiles: m.allProtoFiles(ctx),
+	})
+}
+
+func (m Management) dashboard(ctx *gin.Context) {
+	serviceIdentifier := ctx.Param("service-identifier")
+	serviceIdentifier = strings.TrimPrefix(serviceIdentifier, "/")
+	page, err := m.makeInvokePage(ctx, serviceIdentifier)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	fmt.Println(page)
+	ctx.HTML(http.StatusOK, "dashboard.html", page)
+}
+
+func (m Management) setting(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "setting.html", nil)
 }
 
 func (m Management) Setup(s *server.Server) error {
@@ -280,6 +366,17 @@ func (m Management) Setup(s *server.Server) error {
 	rAPI.GET("/packages", m.listPackages)
 	rAPI.GET("/packages/:package_name", m.getPackage)
 	rAPI.GET("/service-alias", m.listServiceAlias)
+	rAPI.POST("/update", m.addressUpdate)
+
+	a := s.Group("/admin")
+	a.GET("/home", m.emptyAdmin)
+	a.GET("/path-config", m.pathConfig)
+	a.GET("/path", m.emptyPath)
+	a.GET("/path/*service-identifier", m.path)
+
+	s.GET("/dashboard", m.emptyDashboard)
+	s.GET("/dashboard/*service-identifier", m.dashboard)
+	s.GET("/setting", m.setting)
 	return nil
 }
 

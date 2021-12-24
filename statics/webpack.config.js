@@ -11,6 +11,18 @@ module.exports = {
             import: './src/invoke/invoke.js',
             dependOn: 'vendor'
         },
+        config: {
+            import: './src/config/config.js',
+            dependOn: 'vendor'
+        },
+        sidebar: {
+            import: './src/sidebar/sidebar.js',
+            dependOn: 'vendor'
+        },
+        dashboard: {
+            import: './src/dashboard/dashboard.js',
+            dependOn: 'vendor'
+        },
         vendor: './src/vendor.js',
     },
     output: {
