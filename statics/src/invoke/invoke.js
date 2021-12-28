@@ -30,6 +30,8 @@ var fillMethod = function() {
         m.onclick = function() {
             const methodNameInput = document.getElementById("method-name");
             methodNameInput.value = m.dataset.grpcMethodName;
+            const targetAddressInput = document.getElementById("target-addr");
+            targetAddressInput.value = m.dataset.preferTarget;
             methodNameInput.dataset.serviceMethod = m.dataset.serviceMethod;
             window.requestBodyEditor.setValue(m.dataset.inputSchema);
         }

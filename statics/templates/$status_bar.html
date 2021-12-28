@@ -11,10 +11,11 @@
                 {{ .ServiceIdentifier }}
                 {{end}}
             </button>
+            {{$link := .Link}}
             <ul id="serviceMenuContent" class="dropdown-menu scrollable-menu" role="menu" aria-labelledby="serviceMenu">
                 <input type="text" class="form-control" placeholder="Search..." id="serviceMenuSearch">
                 {{range $_, $pf := .ProtoFiles}}
-                <li><a class="dropdown-item" href="/management/invoke/{{$pf.Meta.ImportPath}}">{{ $pf.Filename }}</a>
+                <li><a class="dropdown-item" href="/management/{{$link}}/{{$pf.Meta.ImportPath}}">{{ $pf.Filename }}</a>
                 </li>
                 {{end}}
             </ul>

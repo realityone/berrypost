@@ -169,11 +169,16 @@ func (m Management) findProtoFileByServiceIdentifier(ctx context.Context, servic
 		return "", false, nil
 	}
 
+	stayStill := func() (string, bool, error) {
+		return serviceIdentifier, true, nil
+	}
+
 	for _, fn := range []func() (string, bool, error){
 		fromProtoImportPath,
 		fromProtoFilename,
 		fromProtoPackageName,
 		fromServiceAlias,
+		stayStill,
 	} {
 		importPath, ok, err := fn()
 		if err != nil {
@@ -208,6 +213,7 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 		PackageName:       fileProfile.ProtoPackage.FileDescriptor.GetFullyQualifiedName(),
 		PreferTarget:      serviceIdentifier,
 		ProtoFiles:        m.allProtoFiles(ctx),
+		Link:              "invoke",
 	}
 	preferTarget, ok := fileProfile.Common.Annotation[AppBerrypostManagementInvokePreferTarget]
 	if ok {
@@ -229,7 +235,9 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 				Name:           m.GetName(),
 				GRPCMethodName: fmt.Sprintf("/%s/%s", s.GetFullyQualifiedName(), m.GetName()),
 				ServiceMethod:  fmt.Sprintf("%s.%s", s.GetName(), m.GetName()),
+				PreferTarget:   preferTarget,
 			}
+			fmt.Printf(pm.PreferTarget)
 			descMarshaler := jsonpb.Marshaler{
 				EmitDefaults: true,
 				Indent:       "    ",
@@ -243,7 +251,74 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 		}
 		page.Services = append(page.Services, ps)
 	}
+	return page, nil
+}
 
+func (m Management) makeBlueprintPage(ctx context.Context, blueprintIdentifier string) (*InvokePage, error) {
+	//todo: 根据identifier在etcd中找出相关联的meta
+	userid := "test_user"
+	info, err := m.blueprintMethods(ctx, userid, blueprintIdentifier)
+	if err != nil {
+		return nil, err
+	}
+	meta := &BlueprintMeta{
+		blueprintIdentifier: blueprintIdentifier,
+		Methods:             info,
+	}
+	page := &InvokePage{
+		Meta:              m.server.Meta(),
+		ServiceIdentifier: blueprintIdentifier,
+		//PackageName:       fileProfile.ProtoPackage.FileDescriptor.GetFullyQualifiedName(),
+		PreferTarget: blueprintIdentifier,
+		ProtoFiles:   m.allUserBlueprints(ctx, "test_user"),
+		Link:         "blueprint",
+	}
+	page.Services = make([]*Service, 0, len(meta.Methods))
+	for _, info := range meta.Methods {
+		serviceIdentifier := info.Filename
+		fileProfile, ok := m.findProtoFileByServiceIdentifier(ctx, serviceIdentifier)
+
+		if !ok {
+			return nil, errors.Errorf("Failed to find package profile from service identifier: %q", serviceIdentifier)
+		}
+		preferTarget, ok := fileProfile.Common.Annotation[AppBerrypostManagementInvokePreferTarget]
+		if ok {
+			page.PreferTarget = preferTarget
+		}
+		defaultTarget, ok := fileProfile.Common.Annotation[AppBerrypostManagementInvokeDefaultTarget]
+		if ok {
+			page.DefaultTarget = defaultTarget
+		}
+		for _, s := range fileProfile.ProtoPackage.FileDescriptor.GetServices() {
+			ps := &Service{
+				Name: s.GetName(),
+			}
+			ps.Methods = make([]*Method, 0, len(s.GetMethods()))
+			for _, m := range s.GetMethods() {
+				if m.GetName() != info.MethodName {
+					continue
+				}
+				pm := &Method{
+					Name:           m.GetName(),
+					GRPCMethodName: fmt.Sprintf("/%s/%s", s.GetFullyQualifiedName(), m.GetName()),
+					ServiceMethod:  fmt.Sprintf("%s.%s", s.GetName(), m.GetName()),
+					PreferTarget:   preferTarget,
+				}
+				descMarshaler := jsonpb.Marshaler{
+					EmitDefaults: true,
+					Indent:       "    ",
+				}
+				inputSchema, err := descMarshaler.MarshalToString(dynamic.NewMessage(m.GetInputType()))
+				if err != nil {
+					logrus.Warn("Failed to marshal method: %q input type as string: %+v", m.GetFullyQualifiedName(), err)
+				}
+				pm.InputSchema = inputSchema
+				ps.Methods = append(ps.Methods, pm)
+				break
+			}
+			page.Services = append(page.Services, ps)
+		}
+	}
 	return page, nil
 }
 
@@ -282,7 +357,6 @@ func (m Management) invoke(ctx *gin.Context) {
 		ctx.Error(err)
 		return
 	}
-	fmt.Println(page)
 	ctx.HTML(http.StatusOK, "invoke.html", page)
 }
 
@@ -290,7 +364,27 @@ func (m Management) emptyInvoke(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "invoke.html", &InvokePage{
 		Meta:       m.server.Meta(),
 		ProtoFiles: m.allProtoFiles(ctx),
+		Link:       "invoke",
 	})
+}
+
+func (m Management) emptyBlueprint(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "blueprint.html", &InvokePage{
+		Meta:       m.server.Meta(),
+		ProtoFiles: m.allUserBlueprints(ctx, "test_user"),
+		Link:       "blueprint",
+	})
+}
+
+func (m Management) blueprint(ctx *gin.Context) {
+	//blueprintIdentifier := ctx.Param("service-identifier")
+	blueprintIdentifier := "blueprint1"
+	page, err := m.makeBlueprintPage(ctx, blueprintIdentifier)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	ctx.HTML(http.StatusOK, "blueprint.html", page)
 }
 
 func (m Management) admin(ctx *gin.Context) {
@@ -345,7 +439,6 @@ func (m Management) dashboard(ctx *gin.Context) {
 		ctx.Error(err)
 		return
 	}
-	fmt.Println(page)
 	ctx.HTML(http.StatusOK, "dashboard.html", page)
 }
 
@@ -360,6 +453,8 @@ func (m Management) Setup(s *server.Server) error {
 	r.GET("/rediect-to-example", m.redirectToFirstService)
 	r.GET("/invoke", m.emptyInvoke)
 	r.GET("/invoke/*service-identifier", m.invoke)
+	r.GET("/blueprint", m.emptyBlueprint)
+	r.GET("/blueprint/*service-identifier", m.blueprint)
 
 	rAPI := s.Group("/management/api")
 	rAPI.GET("/_intro", m.intro)

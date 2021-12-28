@@ -2,6 +2,7 @@ package etcd
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -66,6 +67,28 @@ func (etcd *etcd) Get(key string) (string, error) {
 		return "", errors.New(errStr)
 	}
 	return string(resp.Kvs[0].Value), nil
+}
+
+func (etcd *etcd) GetWithPrefix(prefix string) ([]string, []string, error) {
+	var (
+		keys   []string
+		values []string
+	)
+	if etcd.client == nil {
+		return nil, nil, errors.New("etcd not supported")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	resp, err := etcd.client.Get(ctx, prefix, clientv3.WithPrefix(), clientv3.WithSort(clientv3.SortByKey, clientv3.SortDescend))
+	cancel()
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, ev := range resp.Kvs {
+		fmt.Printf("%s : %s\n", ev.Key, ev.Value)
+		keys = append(keys, string(ev.Key))
+		values = append(values, string(ev.Value))
+	}
+	return keys, values, nil
 }
 
 func (etcd *etcd) Delete(key string) error {

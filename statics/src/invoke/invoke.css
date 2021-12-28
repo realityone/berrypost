@@ -21,10 +21,18 @@ body {
 .main-panel,
 .main-panel>.row,
 .method-list,
-.method-list>.list-group,
 .request-panel,
 .response-panel {
     height: calc(100vh - 44px);
+}
+
+.bottom-left {
+    height: 50px;
+}
+
+.method-list>.list-group {
+    height: calc(100vh - 44px - 50px);
+    overflow: scroll;
 }
 
 .response-panel>* {
@@ -34,7 +42,6 @@ body {
 .method-list {
     padding-left: 0%;
     padding-right: 0%;
-    overflow: scroll;
 }
 
 .CodeMirror {

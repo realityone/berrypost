@@ -9,6 +9,7 @@ type Method struct {
 	GRPCMethodName string
 	InputSchema    string
 	ServiceMethod  string
+	PreferTarget   string
 }
 
 type Service struct {
@@ -24,4 +25,15 @@ type InvokePage struct {
 	DefaultTarget     string
 	Services          []*Service
 	ProtoFiles        []*ProtoFileMeta
+	Link              string
+}
+
+type BlueprintMeta struct {
+	blueprintIdentifier string
+	Methods             []*BlueprintMethodInfo
+}
+
+type BlueprintMethodInfo struct {
+	Filename   string `json:"filename"`
+	MethodName string `json:"methodName"`
 }
