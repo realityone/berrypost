@@ -203,6 +203,8 @@ func (m Management) findProtoFileByServiceIdentifier(ctx context.Context, servic
 }
 
 func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string) (*InvokePage, error) {
+	// todo: userid
+	userid := "test_user"
 	fileProfile, ok := m.findProtoFileByServiceIdentifier(ctx, serviceIdentifier)
 	if !ok {
 		return nil, errors.Errorf("Failed to find package profile from service identifier: %q", serviceIdentifier)
@@ -214,6 +216,7 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 		PreferTarget:      serviceIdentifier,
 		ProtoFiles:        m.allProtoFiles(ctx),
 		Link:              "invoke",
+		Blueprints:        m.allUserBlueprints(ctx, userid),
 	}
 	preferTarget, ok := fileProfile.Common.Annotation[AppBerrypostManagementInvokePreferTarget]
 	if ok {
@@ -227,7 +230,8 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 	page.Services = make([]*Service, 0, len(fileProfile.ProtoPackage.FileDescriptor.GetServices()))
 	for _, s := range fileProfile.ProtoPackage.FileDescriptor.GetServices() {
 		ps := &Service{
-			Name: s.GetName(),
+			Name:     s.GetName(),
+			FileName: serviceIdentifier,
 		}
 		ps.Methods = make([]*Method, 0, len(s.GetMethods()))
 		for _, m := range s.GetMethods() {
@@ -255,7 +259,7 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 }
 
 func (m Management) makeBlueprintPage(ctx context.Context, blueprintIdentifier string) (*InvokePage, error) {
-	//todo: 根据identifier在etcd中找出相关联的meta
+	//todo: userid
 	userid := "test_user"
 	info, err := m.blueprintMethods(ctx, userid, blueprintIdentifier)
 	if err != nil {
@@ -270,8 +274,9 @@ func (m Management) makeBlueprintPage(ctx context.Context, blueprintIdentifier s
 		ServiceIdentifier: blueprintIdentifier,
 		//PackageName:       fileProfile.ProtoPackage.FileDescriptor.GetFullyQualifiedName(),
 		PreferTarget: blueprintIdentifier,
-		ProtoFiles:   m.allUserBlueprints(ctx, "test_user"),
+		ProtoFiles:   m.allUserBlueprintsMeta(ctx, userid),
 		Link:         "blueprint",
+		Blueprints:   m.allUserBlueprints(ctx, userid),
 	}
 	page.Services = make([]*Service, 0, len(meta.Methods))
 	for _, info := range meta.Methods {
@@ -291,7 +296,8 @@ func (m Management) makeBlueprintPage(ctx context.Context, blueprintIdentifier s
 		}
 		for _, s := range fileProfile.ProtoPackage.FileDescriptor.GetServices() {
 			ps := &Service{
-				Name: s.GetName(),
+				Name:     s.GetName(),
+				FileName: serviceIdentifier,
 			}
 			ps.Methods = make([]*Method, 0, len(s.GetMethods()))
 			for _, m := range s.GetMethods() {
@@ -371,14 +377,14 @@ func (m Management) emptyInvoke(ctx *gin.Context) {
 func (m Management) emptyBlueprint(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "blueprint.html", &InvokePage{
 		Meta:       m.server.Meta(),
-		ProtoFiles: m.allUserBlueprints(ctx, "test_user"),
+		ProtoFiles: m.allUserBlueprintsMeta(ctx, "test_user"),
 		Link:       "blueprint",
 	})
 }
 
 func (m Management) blueprint(ctx *gin.Context) {
-	//blueprintIdentifier := ctx.Param("service-identifier")
-	blueprintIdentifier := "blueprint1"
+	blueprintIdentifier := ctx.Param("service-identifier")
+	blueprintIdentifier = strings.TrimPrefix(blueprintIdentifier, "/")
 	page, err := m.makeBlueprintPage(ctx, blueprintIdentifier)
 	if err != nil {
 		ctx.Error(err)
@@ -462,6 +468,11 @@ func (m Management) Setup(s *server.Server) error {
 	rAPI.GET("/packages/:package_name", m.getPackage)
 	rAPI.GET("/service-alias", m.listServiceAlias)
 	rAPI.POST("/update", m.addressUpdate)
+	b := rAPI.Group("/blueprint")
+	b.POST("/new", m.newBlueprint)
+	b.POST("/delete", m.delBlueprint)
+	b.POST("/append", m.savetoBlueprint)
+	b.POST("/reduce", m.deleteBlueprintMethod)
 
 	a := s.Group("/admin")
 	a.GET("/home", m.emptyAdmin)

@@ -3,19 +3,154 @@ package management
 import (
 	"context"
 	"encoding/json"
+	"github.com/gin-gonic/gin"
+	"net/http"
 	"strings"
 
 	"github.com/realityone/berrypost/pkg/etcd"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
-func (m Management) allUserBlueprints(ctx context.Context, userid string) []*ProtoFileMeta {
-	//todo: 键设计
-	var out []*ProtoFileMeta
-	prefix := "/" + userid + "/"
+func (m Management) newBlueprint(ctx *gin.Context) {
+	// todo userid
+	userid := "test_user"
+	type BlueprintReq struct {
+		BlueprintName string `json:"blueprintName"`
+	}
+	var reqInfo BlueprintReq
+	if err := ctx.BindJSON(&reqInfo); err != nil {
+		log.Error(err)
+		return
+	}
+	key := m.fullKey(userid, reqInfo.BlueprintName)
+	if err := m.putBlueprint(key, nil); err != nil {
+		ctx.JSON(http.StatusInternalServerError, nil)
+		return
+	}
+	ctx.JSON(http.StatusOK, nil)
+}
+
+func (m Management) renameBlueprint(ctx *gin.Context) {
+	// todo userid
+	userid := "test_user"
+	type BlueprintReq struct {
+		BlueprintName string `json:"blueprintName"`
+	}
+	var reqInfo BlueprintReq
+	if err := ctx.BindJSON(&reqInfo); err != nil {
+		log.Error(err)
+		return
+	}
+	key := m.fullKey(userid, reqInfo.BlueprintName)
+	value, err := etcd.Dao.Get(key)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, nil)
+	}
+	if err = etcd.Dao.Put(key, value); err != nil {
+		ctx.JSON(http.StatusInternalServerError, nil)
+	}
+	ctx.JSON(http.StatusOK, nil)
+}
+
+func (m Management) savetoBlueprint(ctx *gin.Context) {
+	// todo userid
+	userid := "test_user"
+	type BlueprintReq struct {
+		BlueprintName string `json:"blueprintName"`
+		FileName      string `json:"filename"`
+		MethodName    string `json:"methodName"`
+	}
+	var reqInfo BlueprintReq
+	if err := ctx.BindJSON(&reqInfo); err != nil {
+		log.Error(err)
+		return
+	}
+	reqInfo.BlueprintName = strings.Replace(reqInfo.BlueprintName, " ", "", -1)
+	reqInfo.FileName = strings.Replace(reqInfo.FileName, " ", "", -1)
+	reqInfo.MethodName = strings.Replace(reqInfo.MethodName, " ", "", -1)
+	split := strings.Split(reqInfo.MethodName, "/")
+	methodRawName := split[len(split)-1]
+	key := m.fullKey(userid, reqInfo.BlueprintName)
+	method := &BlueprintMethodInfo{
+		Filename:   reqInfo.FileName,
+		MethodName: methodRawName,
+	}
+	if err := m.appendBlueprintMethod(ctx, key, method); err != nil {
+		ctx.JSON(http.StatusInternalServerError, nil)
+		return
+	}
+	ctx.JSON(http.StatusOK, nil)
+}
+
+func (m Management) deleteBlueprintMethod(ctx *gin.Context) {
+	// todo userid
+	userid := "test_user"
+	type BlueprintReq struct {
+		BlueprintName string `json:"blueprintName"`
+		FileName      string `json:"fileName"`
+		MethodName    string `json:"methodName"`
+	}
+	var reqInfo BlueprintReq
+	if err := ctx.BindJSON(&reqInfo); err != nil {
+		log.Error(err)
+		return
+	}
+	reqInfo.BlueprintName = strings.Replace(reqInfo.BlueprintName, " ", "", -1)
+	reqInfo.MethodName = strings.Replace(reqInfo.MethodName, " ", "", -1)
+	split := strings.Split(reqInfo.MethodName, "/")
+	methodRawName := split[len(split)-1]
+	key := m.fullKey(userid, reqInfo.BlueprintName)
+	method := &BlueprintMethodInfo{
+		Filename:   reqInfo.FileName,
+		MethodName: methodRawName,
+	}
+	if err := m.reduceBlueprintMethod(ctx, key, method); err != nil {
+		ctx.JSON(http.StatusInternalServerError, nil)
+		return
+	}
+	ctx.JSON(http.StatusOK, nil)
+}
+
+func (m Management) delBlueprint(ctx *gin.Context) {
+	// todo userid
+	userid := "test_user"
+	type BlueprintReq struct {
+		BlueprintName string `json:"blueprintName"`
+	}
+	var reqInfo BlueprintReq
+	if err := ctx.BindJSON(&reqInfo); err != nil {
+		log.Error(err)
+		return
+	}
+	reqInfo.BlueprintName = strings.Replace(reqInfo.BlueprintName, " ", "", -1)
+	key := m.fullKey(userid, reqInfo.BlueprintName)
+	if err := etcd.Dao.Delete(key); err != nil {
+		ctx.JSON(http.StatusInternalServerError, nil)
+	}
+	ctx.JSON(http.StatusOK, nil)
+}
+
+func (m Management) allUserBlueprints(ctx context.Context, userid string) []string {
+	var out []string
+	prefix := m.fullKey(userid, "")
 	keys, _, err := etcd.Dao.GetWithPrefix(prefix)
 	if err != nil {
-		logrus.Error("Failed to get user blueprints: %+v", err)
+		log.Error("Failed to get user blueprints: %+v", err)
+		return nil
+	}
+	for _, key := range keys {
+		blueprintName := strings.TrimPrefix(key, prefix)
+		out = append(out, blueprintName)
+	}
+	return out
+}
+
+func (m Management) allUserBlueprintsMeta(ctx context.Context, userid string) []*ProtoFileMeta {
+	var out []*ProtoFileMeta
+	prefix := m.fullKey(userid, "")
+	keys, _, err := etcd.Dao.GetWithPrefix(prefix)
+	if err != nil {
+		log.Error("Failed to get user blueprints: %+v", err)
 		return nil
 	}
 	for _, key := range keys {
@@ -31,7 +166,7 @@ func (m Management) allUserBlueprints(ctx context.Context, userid string) []*Pro
 
 func (m Management) blueprintMethods(ctx context.Context, userid string, blueprintIdentifier string) ([]*BlueprintMethodInfo, error) {
 	info := []*BlueprintMethodInfo{}
-	key := "/" + userid + "/" + blueprintIdentifier
+	key := m.fullKey(userid, blueprintIdentifier)
 	value, err := etcd.Dao.Get(key)
 	if err != nil {
 		return nil, err
@@ -42,35 +177,68 @@ func (m Management) blueprintMethods(ctx context.Context, userid string, bluepri
 	return info, nil
 }
 
-func (m Management) newBlueprintMethod(ctx context.Context, userid string, blueprintIdentifier string, newMethods []*BlueprintMethodInfo) ([]*BlueprintMethodInfo, error) {
+func (m Management) appendBlueprintMethod(ctx context.Context, key string, newMethod *BlueprintMethodInfo) error {
 	info := []*BlueprintMethodInfo{}
-	key := "/" + userid + "/" + blueprintIdentifier
 	value, err := etcd.Dao.Get(key)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := json.Unmarshal([]byte(value), &info); err != nil {
-		return nil, err
+		return err
 	}
-	info = append(info, newMethods...)
+	for _, method := range info {
+		if *method == *newMethod {
+			return nil
+		}
+	}
+	info = append(info, newMethod)
 	infoByte, err := json.Marshal(info)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := etcd.Dao.Put(key, string(infoByte)); err != nil {
-		return nil, err
+		return err
 	}
-	return info, nil
+	return nil
 }
 
-func (m Management) newBlueprint(ctx context.Context, userid string, blueprintIdentifier string, info []*BlueprintMethodInfo) ([]*BlueprintMethodInfo, error) {
-	key := "/" + userid + "/" + blueprintIdentifier
+func (m Management) reduceBlueprintMethod(ctx context.Context, key string, deleteMethod *BlueprintMethodInfo) error {
+	info := []*BlueprintMethodInfo{}
+	value, err := etcd.Dao.Get(key)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal([]byte(value), &info); err != nil {
+		return err
+	}
+	for i, method := range info {
+		if *method == *deleteMethod {
+			info = append(info[:i], info[i+1:]...)
+			break
+		}
+	}
 	infoByte, err := json.Marshal(info)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := etcd.Dao.Put(key, string(infoByte)); err != nil {
-		return nil, err
+		return err
 	}
-	return info, nil
+	return nil
+}
+
+func (m Management) putBlueprint(key string, info []*BlueprintMethodInfo) error {
+	infoByte, err := json.Marshal(info)
+	if err != nil {
+		return err
+	}
+	if err := etcd.Dao.Put(key, string(infoByte)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m Management) fullKey(userid string, blueprintIdentifier string) string {
+	//todo: 键设计
+	return "/blueprint/" + userid + "/" + blueprintIdentifier
 }

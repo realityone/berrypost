@@ -5,6 +5,7 @@ import 'codemirror/lib/codemirror.css';
 import 'codemirror/mode/javascript/javascript.js';
 import 'codemirror/mode/shell/shell.js';
 import path from 'path-browserify';
+import {Modal} from "bootstrap";
 
 var setupCodeMirror = function() {
     window.requestBodyEditor = CodeMirror.fromTextArea(requestBody, {
@@ -33,6 +34,7 @@ var fillMethod = function() {
             const targetAddressInput = document.getElementById("target-addr");
             targetAddressInput.value = m.dataset.preferTarget;
             methodNameInput.dataset.serviceMethod = m.dataset.serviceMethod;
+            methodNameInput.dataset.serviceFileName = m.dataset.serviceFileName;
             window.requestBodyEditor.setValue(m.dataset.inputSchema);
         }
     }

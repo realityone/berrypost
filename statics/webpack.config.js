@@ -23,6 +23,10 @@ module.exports = {
             import: './src/dashboard/dashboard.js',
             dependOn: 'vendor'
         },
+        blueprint: {
+            import: './src/blueprint/blueprint.js',
+            dependOn: 'vendor'
+        },
         vendor: './src/vendor.js',
     },
     output: {

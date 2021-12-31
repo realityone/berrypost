@@ -12,6 +12,12 @@
             <span class="input-group-text text-primary">Method</span>
         </div>
         <input id="method-name" type="text" class="form-control" placeholder="/<package>.<service>/<method>" value="" disabled>
+        {{if eq .Link "invoke"}}
+        <button id="saveto-blueprint-modal" class="btn btn-outline-success" type="button"><i class="bi bi-save"></i></button>
+        {{end}}
+        {{if eq .Link "blueprint"}}
+        <button id="delete-method-modal" class="btn btn-danger" type="button"><i class="bi bi-file-earmark-x"></i></i></i></button>
+        {{end}}
         <button id="send-button" class="btn btn-outline-success" type="button">Send</button>
     </div>
 </div>
@@ -80,6 +86,34 @@
         <div class="card-body">
             <div class="preview-area">
                 <textarea class="form-control" id="preview"></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="savetoBlueprintModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newBlueprintModalLabel">Save To Blueprint</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="blueprint-list" class="col-form-label">BlueprintName:</label>
+                        <input list="blueprints" class="form-control" id="blueprint-list" name="blueprint-list" size="50">
+                        <datalist id="blueprints">
+                            {{range $_, $bp := .Blueprints}}
+                                <option value='{{ $bp }}'>
+                            {{end}}
+                        </datalist>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveto-blueprint">Save</button>
             </div>
         </div>
     </div>

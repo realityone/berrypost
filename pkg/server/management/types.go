@@ -13,8 +13,9 @@ type Method struct {
 }
 
 type Service struct {
-	Name    string
-	Methods []*Method
+	Name     string
+	FileName string
+	Methods  []*Method
 }
 
 type InvokePage struct {
@@ -26,6 +27,7 @@ type InvokePage struct {
 	Services          []*Service
 	ProtoFiles        []*ProtoFileMeta
 	Link              string
+	Blueprints        []string
 }
 
 type BlueprintMeta struct {

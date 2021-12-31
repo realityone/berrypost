@@ -27,11 +27,11 @@ body {
 }
 
 .bottom-left {
-    height: 50px;
+    height: 56px;
 }
 
 .method-list>.list-group {
-    height: calc(100vh - 44px - 50px);
+    height: calc(100vh - 44px - 56px);
     overflow: scroll;
 }
 

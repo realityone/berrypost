@@ -10,6 +10,7 @@
 
     <script src="/assets/statics/dist/vendor.bundle.js"></script>
     <script src="/assets/statics/dist/invoke.bundle.js"></script>
+    <script src="/assets/statics/dist/blueprint.bundle.js"></script>
 </head>
 
 <body class="h-100">
@@ -21,13 +22,12 @@
         <div class="row">
             <div class="col-3 d-flex flex-column bg-white method-list">
                 {{template "method-list" .}}
-                <div class="d-flex justify-content-end p-2 bottom-left">
-                    <button type="button" class="btn btn-success"><i class="bi bi-arrow-repeat" ></i><a href="/management/invoke" style="text-decoration: none;color:white">Proto</a></button>
-                </div>
+                {{template "blueprint-bottom-left" .}}
             </div>
 
             <div class="col-5 d-flex flex-column border-start border-end request-panel">
                 {{template "request-panel" .}}
+                {{template "blueprint-modal" .}}
             </div>
 
             <div class="col-4 response-panel pt-2 pb-2">

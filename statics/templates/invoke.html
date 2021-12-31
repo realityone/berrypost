@@ -10,6 +10,9 @@
 
     <script src="/assets/statics/dist/vendor.bundle.js"></script>
     <script src="/assets/statics/dist/invoke.bundle.js"></script>
+    <script src="/assets/statics/dist/blueprint.bundle.js"></script>
+
+
 </head>
 
 <body class="h-100">
@@ -21,7 +24,7 @@
         <div class="row">
             <div class="col-3 d-flex flex-column bg-white method-list">
                 {{template "method-list" .}}
-                {{template "bottom-left" .}}
+                {{template "invoke-bottom-left" .}}
             </div>
 
             <div class="col-5 d-flex flex-column border-start border-end request-panel">
