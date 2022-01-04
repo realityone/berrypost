@@ -30,6 +30,10 @@ type InvokePage struct {
 	Blueprints        []string
 }
 
+type LoginPage struct {
+	Meta server.ServerMeta
+}
+
 type BlueprintMeta struct {
 	blueprintIdentifier string
 	Methods             []*BlueprintMethodInfo

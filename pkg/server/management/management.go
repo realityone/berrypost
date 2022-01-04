@@ -355,6 +355,12 @@ func (m Management) allProtoFiles(ctx context.Context) []*ProtoFileMeta {
 	return files
 }
 
+func (m Management) login(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "login.html", &LoginPage{
+		Meta: m.server.Meta(),
+	})
+}
+
 func (m Management) invoke(ctx *gin.Context) {
 	serviceIdentifier := ctx.Param("service-identifier")
 	fmt.Println(serviceIdentifier)
@@ -462,6 +468,7 @@ func (m Management) Setup(s *server.Server) error {
 	r.GET("/invoke/*service-identifier", m.invoke)
 	r.GET("/blueprint", m.emptyBlueprint)
 	r.GET("/blueprint/*service-identifier", m.blueprint)
+	r.GET("/login", m.login)
 
 	rAPI := s.Group("/management/api")
 	rAPI.GET("/_intro", m.intro)

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="{{ .Meta.Description }}">
+  <link rel="icon" href="/favicon.ico">
+  <title>{{ .Meta.Name }}</title>
+
+    <script src="/assets/statics/dist/vendor.bundle.js"></script>
+    <script src="/assets/statics/dist/login.bundle.js"></script>
+
+  </head>
+  <body class="text-center">
+    
+<main class="form-signin">
+  <form>
+    <div class="mb-4 d-flex align-items-center">
+      <div class="m-auto" id="main-image">
+      </div>
+    </div>
+    <h1 class="h3 mb-3 fw-normal">Please sign in</h1>
+
+    <div class="form-floating">
+      <input type="text" class="form-control" id="floatingInput" placeholder="Userid">
+      <label for="floatingInput">Userid</label>
+    </div>
+    <div class="form-floating">
+      <input type="password" class="form-control" id="floatingPassword" placeholder="Password">
+      <label for="floatingPassword">Password</label>
+    </div>
+
+    <button class="w-100 btn btn-lg btn-primary p-1" type="submit">Sign in</button>
+    <p class="mt-5 mb-3 text-muted">&copy;2021–2022</p>
+  </form>
+</main>
+
+
+    
+  </body>
+</html>
