@@ -63,8 +63,7 @@ func (etcd *etcd) Get(key string) (string, error) {
 		return "", err
 	}
 	if len(resp.Kvs) != 1 {
-		errStr := "etcd key not found"
-		return "", errors.New(errStr)
+		return "", nil
 	}
 	return string(resp.Kvs[0].Value), nil
 }

@@ -10,7 +10,6 @@
 
     <script src="/assets/statics/dist/vendor.bundle.js"></script>
     <script src="/assets/statics/dist/invoke.bundle.js"></script>
-    <script src="/assets/statics/dist/blueprint.bundle.js"></script>
 
 
 </head>
@@ -29,6 +28,7 @@
 
             <div class="col-5 d-flex flex-column border-start border-end request-panel">
                 {{template "request-panel" .}}
+                {{template "invoke-modal" .}}
             </div>
 
             <div class="col-4 response-panel pt-2 pb-2">

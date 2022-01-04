@@ -3,7 +3,9 @@ package management
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 	"net/http"
 	"strings"
 
@@ -24,8 +26,44 @@ func (m Management) newBlueprint(ctx *gin.Context) {
 	}
 	key := m.fullKey(userid, reqInfo.BlueprintName)
 	if err := m.putBlueprint(key, nil); err != nil {
+		log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, nil)
 		return
+	}
+	ctx.JSON(http.StatusOK, nil)
+}
+
+func (m Management) copyBlueprint(ctx *gin.Context) {
+	// todo userid
+	userid := "test_user"
+	type BlueprintReq struct {
+		BlueprintName string `json:"blueprintName"`
+		FileName      string `json:"fileName"`
+	}
+	var reqInfo BlueprintReq
+	if err := ctx.BindJSON(&reqInfo); err != nil {
+		log.Error(err)
+		return
+	}
+	reqInfo.BlueprintName = strings.Replace(reqInfo.BlueprintName, " ", "", -1)
+	reqInfo.FileName = strings.Replace(reqInfo.FileName, " ", "", -1)
+	methods, err := m.getMethodsByService(ctx, reqInfo.FileName)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	key := m.fullKey(userid, reqInfo.BlueprintName)
+	for _, method := range methods {
+		info := &BlueprintMethodInfo{
+			Filename:   reqInfo.FileName,
+			MethodName: method,
+		}
+		fmt.Println(info)
+		if err := m.appendBlueprintMethod(ctx, key, info); err != nil {
+			log.Error(err)
+			ctx.JSON(http.StatusInternalServerError, nil)
+			return
+		}
 	}
 	ctx.JSON(http.StatusOK, nil)
 }
@@ -44,9 +82,16 @@ func (m Management) renameBlueprint(ctx *gin.Context) {
 	key := m.fullKey(userid, reqInfo.BlueprintName)
 	value, err := etcd.Dao.Get(key)
 	if err != nil {
+		log.Error(err)
+		ctx.JSON(http.StatusInternalServerError, nil)
+	}
+	//todo 事务
+	if err = etcd.Dao.Delete(key); err != nil {
+		log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, nil)
 	}
 	if err = etcd.Dao.Put(key, value); err != nil {
+		log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, nil)
 	}
 	ctx.JSON(http.StatusOK, nil)
@@ -76,6 +121,7 @@ func (m Management) savetoBlueprint(ctx *gin.Context) {
 		MethodName: methodRawName,
 	}
 	if err := m.appendBlueprintMethod(ctx, key, method); err != nil {
+		log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, nil)
 		return
 	}
@@ -105,6 +151,7 @@ func (m Management) deleteBlueprintMethod(ctx *gin.Context) {
 		MethodName: methodRawName,
 	}
 	if err := m.reduceBlueprintMethod(ctx, key, method); err != nil {
+		log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, nil)
 		return
 	}
@@ -125,6 +172,7 @@ func (m Management) delBlueprint(ctx *gin.Context) {
 	reqInfo.BlueprintName = strings.Replace(reqInfo.BlueprintName, " ", "", -1)
 	key := m.fullKey(userid, reqInfo.BlueprintName)
 	if err := etcd.Dao.Delete(key); err != nil {
+		log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, nil)
 	}
 	ctx.JSON(http.StatusOK, nil)
@@ -183,12 +231,14 @@ func (m Management) appendBlueprintMethod(ctx context.Context, key string, newMe
 	if err != nil {
 		return err
 	}
-	if err := json.Unmarshal([]byte(value), &info); err != nil {
-		return err
-	}
-	for _, method := range info {
-		if *method == *newMethod {
-			return nil
+	if value != "" {
+		if err := json.Unmarshal([]byte(value), &info); err != nil {
+			return err
+		}
+		for _, method := range info {
+			if *method == *newMethod {
+				return nil
+			}
 		}
 	}
 	info = append(info, newMethod)
@@ -241,4 +291,18 @@ func (m Management) putBlueprint(key string, info []*BlueprintMethodInfo) error 
 func (m Management) fullKey(userid string, blueprintIdentifier string) string {
 	//todo: 键设计
 	return "/blueprint/" + userid + "/" + blueprintIdentifier
+}
+
+func (m Management) getMethodsByService(ctx context.Context, serviceIdentifier string) ([]string, error) {
+	var methods []string
+	fileProfile, ok := m.findProtoFileByServiceIdentifier(ctx, serviceIdentifier)
+	if !ok {
+		return nil, errors.Errorf("Failed to find package profile from service identifier: %q", serviceIdentifier)
+	}
+	for _, s := range fileProfile.ProtoPackage.FileDescriptor.GetServices() {
+		for _, m := range s.GetMethods() {
+			methods = append(methods, m.GetName())
+		}
+	}
+	return methods, nil
 }

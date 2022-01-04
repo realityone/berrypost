@@ -357,6 +357,7 @@ func (m Management) allProtoFiles(ctx context.Context) []*ProtoFileMeta {
 
 func (m Management) invoke(ctx *gin.Context) {
 	serviceIdentifier := ctx.Param("service-identifier")
+	fmt.Println(serviceIdentifier)
 	serviceIdentifier = strings.TrimPrefix(serviceIdentifier, "/")
 	page, err := m.makeInvokePage(ctx, serviceIdentifier)
 	if err != nil {
@@ -471,6 +472,7 @@ func (m Management) Setup(s *server.Server) error {
 	b := rAPI.Group("/blueprint")
 	b.POST("/new", m.newBlueprint)
 	b.POST("/delete", m.delBlueprint)
+	b.POST("/copy", m.copyBlueprint)
 	b.POST("/append", m.savetoBlueprint)
 	b.POST("/reduce", m.deleteBlueprintMethod)
 

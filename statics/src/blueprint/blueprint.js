@@ -28,35 +28,7 @@ let newBlueprintReq = function(){
                 'blueprintName' : blueprintName,
             }),
         }).then((response) => {
-            document.location.reload();
-        })
-    }
-}
-
-let savetoBlueprintModal = function(){
-    const modelButton = document.getElementById("saveto-blueprint-modal");
-    modelButton.onclick = function() {
-        // todo check user token
-        const myModal = new Modal(document.getElementById('savetoBlueprintModal'))
-        myModal.show()
-    }
-}
-
-let savetoBlueprintReq = function(){
-    const reqButton = document.getElementById("saveto-blueprint");
-    reqButton.onclick = function() {
-        const blueprintName = document.getElementById("blueprint-list").value;
-        const filename = document.getElementById("serviceMenu").innerText;
-        const methodNameInput = document.getElementById("method-name").value;
-        fetch("/management/api/blueprint/append", {
-            method: "POST",
-            body: JSON.stringify({
-                'blueprintName' : blueprintName,
-                'fileName':filename,
-                'methodName':methodNameInput,
-            }),
-        }).then((response) => {
-            alert("save successfully!")
+            alert("new blueprint successfully!")
             document.location.reload();
         })
     }
@@ -119,8 +91,6 @@ let deleteBlueprintReq = function(){
 window.addEventListener('load', newMethodModal);
 window.addEventListener('load', newBlueprintModal);
 window.addEventListener('load', newBlueprintReq);
-window.addEventListener('load', savetoBlueprintReq);
-window.addEventListener('load', savetoBlueprintModal);
 window.addEventListener('load', deleteMethodModal);
 window.addEventListener('load', deleteMethodReq);
 window.addEventListener('load', deleteBlueprintModal);
