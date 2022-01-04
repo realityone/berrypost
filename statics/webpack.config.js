@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack')
 
 module.exports = {
     mode: 'production',
@@ -31,6 +32,10 @@ module.exports = {
             import: './src/login/login.js',
             dependOn: 'vendor'
         },
+        select: {
+            import: './src/bootstrap-select/bootstrap-select.js',
+            dependOn: 'vendor'
+        },
         vendor: './src/vendor.js',
     },
     output: {
@@ -52,4 +57,12 @@ module.exports = {
             type: 'asset/resource',
         }],
     },
+    plugins: [
+        new webpack.ProvidePlugin({
+            $: "jquery",
+            jQuery: "jquery",
+            "windows.jQuery": "jquery"
+        })
+    ],
+
 };

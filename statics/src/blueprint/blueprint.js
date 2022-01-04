@@ -1,5 +1,4 @@
 import '../vendor.js';
-import '../invoke/invoke.css';
 import { Modal } from 'bootstrap';
 
 let newMethodModal = function(){

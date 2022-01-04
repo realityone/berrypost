@@ -8,9 +8,11 @@
     <link rel="icon" href="/favicon.ico">
     <title>{{ .Meta.Name }}</title>
 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script src="/assets/statics/dist/vendor.bundle.js"></script>
     <script src="/assets/statics/dist/invoke.bundle.js"></script>
     <script src="/assets/statics/dist/blueprint.bundle.js"></script>
+    <script src="/assets/statics/dist/select.bundle.js"></script>
 </head>
 
 <body class="h-100">
@@ -26,6 +28,11 @@
             </div>
 
             <div class="col-5 d-flex flex-column border-start border-end request-panel">
+                <select multiple class="selectpicker form-control" id="number-multiple" data-live-search="true" title="Select a number" data-hide-disabled="true" data-actions-box="true" data-virtual-scroll="false">
+                    <option>Mustard</option>
+                    <option>Ketchup</option>
+                    <option>Relish</option>
+                </select>
                 {{template "request-panel" .}}
                 {{template "blueprint-modal" .}}
             </div>
