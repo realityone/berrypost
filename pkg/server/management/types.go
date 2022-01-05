@@ -26,8 +26,18 @@ type InvokePage struct {
 	DefaultTarget     string
 	Services          []*Service
 	ProtoFiles        []*ProtoFileMeta
-	Link              string
 	Blueprints        []string
+}
+
+type BlueprintPage struct {
+	Meta                server.ServerMeta
+	BlueprintIdentifier string
+	PackageName         string
+	PreferTarget        string
+	DefaultTarget       string
+	Services            []*Service
+	ProtoFiles          []*ProtoFileMeta
+	Blueprints          []string
 }
 
 type LoginPage struct {

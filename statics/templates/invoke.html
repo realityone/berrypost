@@ -9,14 +9,15 @@
     <title>{{ .Meta.Name }}</title>
 
     <script src="/assets/statics/dist/vendor.bundle.js"></script>
+    <script src="/assets/statics/dist/common.bundle.js"></script>
     <script src="/assets/statics/dist/invoke.bundle.js"></script>
-
+    <script src="/assets/statics/dist/select.bundle.js"></script>
 
 </head>
 
 <body class="h-100">
     <div class="container-fluid status-bar bg-light">
-        {{template "status-bar" .}}
+        {{template "invoke-status-bar" .}}
     </div>
 
     <div class="container-fluid main-panel">

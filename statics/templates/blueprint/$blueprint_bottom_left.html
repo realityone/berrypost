@@ -2,16 +2,19 @@
 
 <div class="d-flex justify-content-end bottom-left p-2">
     <div class="btn-group p-1" role="group" aria-label="Basic outlined example">
-        {{if ne .ServiceIdentifier ""}}
-        <button type="button" class="btn btn-outline-success" id="delete-blueprint-modal">
+        {{if ne .BlueprintIdentifier ""}}
+        <button id="delete-method-modal" class="btn btn-outline-danger" type="button">
+            <i class="bi bi-file-earmark-x"></i>
+        </button>
+        <button type="button" class="btn btn-outline-danger" id="delete-blueprint-modal">
             <i class="bi bi-folder-minus"></i>
+        </button>
+        <button type="button" class="btn btn-outline-success" id="method-modal">
+            <i class="bi bi-plus-circle"></i>
         </button>
         {{end}}
         <button type="button" class="btn btn-outline-success" id="blueprint-modal">
             <i class="bi bi-folder-plus"></i>
-        </button>
-        <button type="button" class="btn btn-outline-success" id="method-modal">
-            <i class="bi bi-plus-circle"></i>
         </button>
 <!--        <button id="btnGroupDrop1" type="button" class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">-->
 <!--            <i class="bi bi-three-dots"></i>-->

@@ -12,12 +12,6 @@
             <span class="input-group-text text-primary">Method</span>
         </div>
         <input id="method-name" type="text" class="form-control" placeholder="/<package>.<service>/<method>" value="" disabled>
-        {{if eq .Link "invoke"}}
-        <button id="saveto-blueprint-modal" class="btn btn-outline-success" type="button"><i class="bi bi-save"></i></button>
-        {{end}}
-        {{if eq .Link "blueprint"}}
-        <button id="delete-method-modal" class="btn btn-danger" type="button"><i class="bi bi-file-earmark-x"></i></i></i></button>
-        {{end}}
         <button id="send-button" class="btn btn-outline-success" type="button">Send</button>
     </div>
 </div>

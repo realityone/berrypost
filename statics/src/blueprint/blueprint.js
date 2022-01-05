@@ -1,11 +1,61 @@
 import '../vendor.js';
 import { Modal } from 'bootstrap';
 
+let initSel = function() {
+    const fileSel = document.getElementById("file-name");
+    fileSel.onchange = function() {
+        fetch("/management/api/getMethods", {
+            method: "POST",
+            body: JSON.stringify({
+                'fileName' : fileSel.value,
+            }),
+        }).then((json) => {
+            return json.json()
+        }).then((data) => {
+            initMethod(data);
+        })
+    }
+}
+
+let initMethod = function(methods){
+    if (methods === null) {
+        return
+    }
+    const methodSel = document.getElementById("new-method-name");
+    const methodOB = $('#new-method-name');
+    methodOB.empty();
+    for(let j = 0; j < methods.length; j++) {
+        methodSel.appendChild(new Option(methods[j], methods[j]));
+    }
+    methodOB.selectpicker('refresh');
+    methodOB.selectpicker('render');
+}
+
 let newMethodModal = function(){
     const modelButton = document.getElementById("method-modal");
     modelButton.onclick = function() {
         const myModal = new Modal(document.getElementById('newMethodModal'))
         myModal.show()
+    }
+}
+
+let newMethodReq = function(){
+    const reqButton = document.getElementById("add-method");
+    reqButton.onclick = function() {
+        const blueprintName = document.getElementById("serviceMenu").innerText;
+        const filename = document.getElementById("file-name").value;
+        const method = $("#new-method-name").val();
+        fetch("/management/api/blueprint/appendList", {
+            method: "POST",
+            body: JSON.stringify({
+                'blueprintName' : blueprintName,
+                'filename' : filename,
+                'methodName' : method,
+            }),
+        }).then((response) => {
+            alert("new methods successfully!")
+            document.location.reload();
+        })
     }
 }
 
@@ -28,7 +78,7 @@ let newBlueprintReq = function(){
             }),
         }).then((response) => {
             alert("new blueprint successfully!")
-            document.location.reload();
+            document.location.replace("/management/blueprint/"+blueprintName);
         })
     }
 }
@@ -82,12 +132,13 @@ let deleteBlueprintReq = function(){
         }).then((response) => {
             alert("delete successfully!")
             document.location.replace("/management/blueprint");
-
         })
     }
 }
 
+window.addEventListener('load', initSel);
 window.addEventListener('load', newMethodModal);
+window.addEventListener('load', newMethodReq);
 window.addEventListener('load', newBlueprintModal);
 window.addEventListener('load', newBlueprintReq);
 window.addEventListener('load', deleteMethodModal);

@@ -1,0 +1,121 @@
+html,
+body {
+    height: 100%;
+    width: 100%;
+    font-size: 14px;
+}
+
+.dot {
+    height: 12px;
+    width: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-bar,
+.status-bar>* {
+    height: 44px;
+    min-height: 44px;
+}
+
+.main-panel,
+.main-panel>.row,
+.method-list,
+.request-panel,
+.response-panel {
+    height: calc(100vh - 44px);
+}
+
+.bottom-left {
+    height: 56px;
+}
+
+.method-list>.list-group {
+    height: calc(100vh - 44px - 56px);
+    overflow: scroll;
+}
+
+.response-panel>* {
+    height: 100%;
+}
+
+.method-list {
+    padding-left: 0%;
+    padding-right: 0%;
+}
+
+.CodeMirror {
+    font-size: 10px;
+}
+
+.code-preview,
+.code-preview>* {
+    height: 100%;
+    overflow: hidden;
+}
+
+.preview-area>.CodeMirror,
+.response-area>.CodeMirror {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+}
+
+.response-area,
+.preview-area {
+    flex: 1 1 auto;
+    margin-top: 0;
+    height: 100%;
+    position: relative;
+}
+
+.scrollable-menu {
+    height: auto;
+    max-height: 40vh;
+    overflow-x: hidden;
+}
+
+#request-action {
+    position: relative;
+}
+
+#request-action-badge {
+    position: absolute;
+    right: 0;
+}
+
+.request-status>.text-secondary {
+    font-size: 50%;
+    white-space: nowrap;
+}
+
+.request-status>.progress {
+    height: 3px;
+}
+
+.request-status>.progress>.progress-bar {
+    width: 75%;
+}
+
+#metadata>.table {
+    color: gray;
+}
+
+.delete-metadata {
+    cursor: pointer;
+}
+
+
+/* for Safari only */
+
+@media not all and (min-resolution:.001dpcm) {
+    @media all {
+        .code-preview>.card>.card-body,
+        .response-panel>.card>.card-body {
+            height: 100%;
+        }
+    }
+}

@@ -36,6 +36,10 @@ module.exports = {
             import: './src/bootstrap-select/bootstrap-select.js',
             dependOn: 'vendor'
         },
+        common: {
+            import: './src/common/common.js',
+            dependOn: 'vendor'
+        },
         vendor: './src/vendor.js',
     },
     output: {
@@ -61,7 +65,7 @@ module.exports = {
         new webpack.ProvidePlugin({
             $: "jquery",
             jQuery: "jquery",
-            "windows.jQuery": "jquery"
+            "window.jQuery": "jquery"
         })
     ],
 

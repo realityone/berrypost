@@ -39,12 +39,11 @@
                 <form>
                     <div class="mb-3">
                         <label for="copy-blueprint-name" class="col-form-label">BlueprintName:</label>
-                        <input list="copyBlueprints" class="form-control" id="copy-blueprint-name" name="blueprint-list" size="50">
-                        <datalist id="copyBlueprints">
-                            {{range $_, $bp := .Blueprints}}
-                            <option value='{{ $bp }}'>
-                                {{end}}
-                        </datalist>
+                        <select class="selectpicker form-control" id="copy-blueprint-name" name="blueprint-list" data-live-search="true" >
+                        {{range $_, $bp := .Blueprints}}
+                            <option value='{{ $bp }}'>{{ $bp }}</option>
+                        {{end}}
+                        </select>
                     </div>
                 </form>
             </div>

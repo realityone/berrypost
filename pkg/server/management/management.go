@@ -81,7 +81,6 @@ func (m Management) listServiceAlias(ctx *gin.Context) {
 }
 
 func (m Management) addressUpdate(ctx *gin.Context) {
-
 	type KDRespBody struct {
 		TargetAddr string `json:"targetAddrInput"`
 		ProtoName  string `json:"serviceInput"`
@@ -98,6 +97,22 @@ func (m Management) addressUpdate(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, nil)
 	}
 	ctx.JSON(http.StatusOK, nil)
+}
+
+func (m Management) getMethods(ctx *gin.Context) {
+	type RespBody struct {
+		FileName string `json:"fileName"`
+	}
+	var reqInfo RespBody
+	if err := ctx.BindJSON(&reqInfo); err != nil {
+		ctx.Error(err)
+		return
+	}
+	methods, err := m.getMethodsByService(ctx, reqInfo.FileName)
+	if err != nil {
+		ctx.Error(err)
+	}
+	ctx.JSON(http.StatusOK, methods)
 }
 
 // find proto file by service identifier in this order:
@@ -215,7 +230,6 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 		PackageName:       fileProfile.ProtoPackage.FileDescriptor.GetFullyQualifiedName(),
 		PreferTarget:      serviceIdentifier,
 		ProtoFiles:        m.allProtoFiles(ctx),
-		Link:              "invoke",
 		Blueprints:        m.allUserBlueprints(ctx, userid),
 	}
 	preferTarget, ok := fileProfile.Common.Annotation[AppBerrypostManagementInvokePreferTarget]
@@ -241,7 +255,6 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 				ServiceMethod:  fmt.Sprintf("%s.%s", s.GetName(), m.GetName()),
 				PreferTarget:   preferTarget,
 			}
-			fmt.Printf(pm.PreferTarget)
 			descMarshaler := jsonpb.Marshaler{
 				EmitDefaults: true,
 				Indent:       "    ",
@@ -258,7 +271,7 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 	return page, nil
 }
 
-func (m Management) makeBlueprintPage(ctx context.Context, blueprintIdentifier string) (*InvokePage, error) {
+func (m Management) makeBlueprintPage(ctx context.Context, blueprintIdentifier string) (*BlueprintPage, error) {
 	//todo: userid
 	userid := "test_user"
 	info, err := m.blueprintMethods(ctx, userid, blueprintIdentifier)
@@ -269,13 +282,12 @@ func (m Management) makeBlueprintPage(ctx context.Context, blueprintIdentifier s
 		blueprintIdentifier: blueprintIdentifier,
 		Methods:             info,
 	}
-	page := &InvokePage{
-		Meta:              m.server.Meta(),
-		ServiceIdentifier: blueprintIdentifier,
+	page := &BlueprintPage{
+		Meta:                m.server.Meta(),
+		BlueprintIdentifier: blueprintIdentifier,
 		//PackageName:       fileProfile.ProtoPackage.FileDescriptor.GetFullyQualifiedName(),
 		PreferTarget: blueprintIdentifier,
-		ProtoFiles:   m.allUserBlueprintsMeta(ctx, userid),
-		Link:         "blueprint",
+		ProtoFiles:   m.allProtoFiles(ctx),
 		Blueprints:   m.allUserBlueprints(ctx, userid),
 	}
 	page.Services = make([]*Service, 0, len(meta.Methods))
@@ -363,7 +375,6 @@ func (m Management) login(ctx *gin.Context) {
 
 func (m Management) invoke(ctx *gin.Context) {
 	serviceIdentifier := ctx.Param("service-identifier")
-	fmt.Println(serviceIdentifier)
 	serviceIdentifier = strings.TrimPrefix(serviceIdentifier, "/")
 	page, err := m.makeInvokePage(ctx, serviceIdentifier)
 	if err != nil {
@@ -377,20 +388,18 @@ func (m Management) emptyInvoke(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "invoke.html", &InvokePage{
 		Meta:       m.server.Meta(),
 		ProtoFiles: m.allProtoFiles(ctx),
-		Link:       "invoke",
 	})
 }
 
 func (m Management) emptyBlueprint(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "blueprint.html", &InvokePage{
+	ctx.HTML(http.StatusOK, "blueprint.html", &BlueprintPage{
 		Meta:       m.server.Meta(),
-		ProtoFiles: m.allUserBlueprintsMeta(ctx, "test_user"),
-		Link:       "blueprint",
+		Blueprints: m.allUserBlueprintsMeta(ctx, "test_user"),
 	})
 }
 
 func (m Management) blueprint(ctx *gin.Context) {
-	blueprintIdentifier := ctx.Param("service-identifier")
+	blueprintIdentifier := ctx.Param("blueprint-identifier")
 	blueprintIdentifier = strings.TrimPrefix(blueprintIdentifier, "/")
 	page, err := m.makeBlueprintPage(ctx, blueprintIdentifier)
 	if err != nil {
@@ -467,7 +476,7 @@ func (m Management) Setup(s *server.Server) error {
 	r.GET("/invoke", m.emptyInvoke)
 	r.GET("/invoke/*service-identifier", m.invoke)
 	r.GET("/blueprint", m.emptyBlueprint)
-	r.GET("/blueprint/*service-identifier", m.blueprint)
+	r.GET("/blueprint/*blueprint-identifier", m.blueprint)
 	r.GET("/login", m.login)
 
 	rAPI := s.Group("/management/api")
@@ -476,11 +485,13 @@ func (m Management) Setup(s *server.Server) error {
 	rAPI.GET("/packages/:package_name", m.getPackage)
 	rAPI.GET("/service-alias", m.listServiceAlias)
 	rAPI.POST("/update", m.addressUpdate)
+	rAPI.POST("/getMethods", m.getMethods)
 	b := rAPI.Group("/blueprint")
 	b.POST("/new", m.newBlueprint)
 	b.POST("/delete", m.delBlueprint)
 	b.POST("/copy", m.copyBlueprint)
 	b.POST("/append", m.savetoBlueprint)
+	b.POST("/appendList", m.appendBlueprint)
 	b.POST("/reduce", m.deleteBlueprintMethod)
 
 	a := s.Group("/admin")

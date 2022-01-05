@@ -3,7 +3,6 @@ package management
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	"net/http"
@@ -58,7 +57,6 @@ func (m Management) copyBlueprint(ctx *gin.Context) {
 			Filename:   reqInfo.FileName,
 			MethodName: method,
 		}
-		fmt.Println(info)
 		if err := m.appendBlueprintMethod(ctx, key, info); err != nil {
 			log.Error(err)
 			ctx.JSON(http.StatusInternalServerError, nil)
@@ -116,14 +114,48 @@ func (m Management) savetoBlueprint(ctx *gin.Context) {
 	split := strings.Split(reqInfo.MethodName, "/")
 	methodRawName := split[len(split)-1]
 	key := m.fullKey(userid, reqInfo.BlueprintName)
-	method := &BlueprintMethodInfo{
+	methodInfo := &BlueprintMethodInfo{
 		Filename:   reqInfo.FileName,
 		MethodName: methodRawName,
 	}
-	if err := m.appendBlueprintMethod(ctx, key, method); err != nil {
+	if err := m.appendBlueprintMethod(ctx, key, methodInfo); err != nil {
 		log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, nil)
 		return
+	}
+	ctx.JSON(http.StatusOK, nil)
+}
+
+func (m Management) appendBlueprint(ctx *gin.Context) {
+	// todo userid
+	userid := "test_user"
+	type BlueprintReq struct {
+		BlueprintName string   `json:"blueprintName"`
+		FileName      string   `json:"filename"`
+		MethodName    []string `json:"methodName"`
+	}
+	var reqInfo BlueprintReq
+	if err := ctx.BindJSON(&reqInfo); err != nil {
+		log.Error(err)
+		ctx.JSON(http.StatusInternalServerError, nil)
+		return
+	}
+	reqInfo.BlueprintName = strings.Replace(reqInfo.BlueprintName, " ", "", -1)
+	reqInfo.FileName = strings.Replace(reqInfo.FileName, " ", "", -1)
+	for _, method := range reqInfo.MethodName {
+		method = strings.Replace(method, " ", "", -1)
+		split := strings.Split(method, "/")
+		methodRawName := split[len(split)-1]
+		key := m.fullKey(userid, reqInfo.BlueprintName)
+		methodInfo := &BlueprintMethodInfo{
+			Filename:   reqInfo.FileName,
+			MethodName: methodRawName,
+		}
+		if err := m.appendBlueprintMethod(ctx, key, methodInfo); err != nil {
+			log.Error(err)
+			ctx.JSON(http.StatusInternalServerError, nil)
+			return
+		}
 	}
 	ctx.JSON(http.StatusOK, nil)
 }
@@ -193,8 +225,8 @@ func (m Management) allUserBlueprints(ctx context.Context, userid string) []stri
 	return out
 }
 
-func (m Management) allUserBlueprintsMeta(ctx context.Context, userid string) []*ProtoFileMeta {
-	var out []*ProtoFileMeta
+func (m Management) allUserBlueprintsMeta(ctx context.Context, userid string) []string {
+	var out []string
 	prefix := m.fullKey(userid, "")
 	keys, _, err := etcd.Dao.GetWithPrefix(prefix)
 	if err != nil {
@@ -203,11 +235,7 @@ func (m Management) allUserBlueprintsMeta(ctx context.Context, userid string) []
 	}
 	for _, key := range keys {
 		blueprintName := strings.TrimPrefix(key, prefix)
-		pm := &ProtoFileMeta{
-			Filename: blueprintName,
-		}
-		pm.Meta.ImportPath = blueprintName
-		out = append(out, pm)
+		out = append(out, blueprintName)
 	}
 	return out
 }

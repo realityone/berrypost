@@ -2,7 +2,6 @@ package etcd
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -83,7 +82,6 @@ func (etcd *etcd) GetWithPrefix(prefix string) ([]string, []string, error) {
 		return nil, nil, err
 	}
 	for _, ev := range resp.Kvs {
-		fmt.Printf("%s : %s\n", ev.Key, ev.Value)
 		keys = append(keys, string(ev.Key))
 		values = append(values, string(ev.Value))
 	}

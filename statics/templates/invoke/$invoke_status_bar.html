@@ -1,0 +1,38 @@
+{{define "invoke-status-bar"}}
+
+<div class="row border-top border-bottom">
+    <div class="col-4 d-flex align-items-center">
+        <div class="dropdown">
+            <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="serviceMenu"
+                data-bs-toggle="dropdown" aria-expanded="false">
+                {{if eq .ServiceIdentifier ""}}
+                [Select To Start]
+                {{else}}
+                {{ .ServiceIdentifier }}
+                {{end}}
+            </button>
+            <ul id="serviceMenuContent" class="dropdown-menu scrollable-menu" role="menu" aria-labelledby="serviceMenu">
+                <input type="text" class="form-control" placeholder="Search..." id="serviceMenuSearch">
+                {{range $_, $pf := .ProtoFiles}}
+                <li><a class="dropdown-item" href="/management/invoke/{{$pf.Meta.ImportPath}}">{{ $pf.Filename }}</a>
+                </li>
+                {{end}}
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-4 text-center border-start border-end request-status d-flex flex-column">
+        <div id="request-action">
+            <div id="request-action-text">Ready</div>
+        </div>
+        <div id="request-action-description" class="text-secondary"></div>
+        <div style="display: none;" class="progress">
+            <div class="progress-bar progress-bar-striped" role="progressbar" aria-valuenow="75" aria-valuemin="0"
+                aria-valuemax="100"></div>
+        </div>
+    </div>
+
+    <div class="col-4"></div>
+</div>
+
+{{end}}
