@@ -16,10 +16,6 @@ module.exports = {
             import: './src/config/config.js',
             dependOn: 'vendor'
         },
-        sidebar: {
-            import: './src/sidebar/sidebar.js',
-            dependOn: 'vendor'
-        },
         dashboard: {
             import: './src/dashboard/dashboard.js',
             dependOn: 'vendor'

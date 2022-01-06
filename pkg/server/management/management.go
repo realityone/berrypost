@@ -409,43 +409,6 @@ func (m Management) blueprint(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "blueprint.html", page)
 }
 
-func (m Management) admin(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "admin.html", nil)
-}
-
-func (m Management) emptyAdmin(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "admin.html", nil)
-}
-
-func (m Management) pathConfig(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "pathConfig.html", nil)
-}
-
-func (m Management) emptyPath(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "config.html", &InvokePage{
-		Meta:       m.server.Meta(),
-		ProtoFiles: m.allProtoFiles(ctx),
-	})
-}
-
-func (m Management) path(ctx *gin.Context) {
-	serviceIdentifier := ctx.Param("service-identifier")
-	if serviceIdentifier == "" {
-		ctx.HTML(http.StatusOK, "pathConfig.html", &InvokePage{
-			Meta:       m.server.Meta(),
-			ProtoFiles: m.allProtoFiles(ctx),
-		})
-		return
-	}
-	serviceIdentifier = strings.TrimPrefix(serviceIdentifier, "/")
-	page, err := m.makeInvokePage(ctx, serviceIdentifier)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
-	ctx.HTML(http.StatusOK, "config.html", page)
-}
-
 func (m Management) emptyDashboard(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "dashboard.html", &InvokePage{
 		Meta:       m.server.Meta(),
@@ -493,12 +456,6 @@ func (m Management) Setup(s *server.Server) error {
 	b.POST("/append", m.savetoBlueprint)
 	b.POST("/appendList", m.appendBlueprint)
 	b.POST("/reduce", m.deleteBlueprintMethod)
-
-	a := s.Group("/admin")
-	a.GET("/home", m.emptyAdmin)
-	a.GET("/path-config", m.pathConfig)
-	a.GET("/path", m.emptyPath)
-	a.GET("/path/*service-identifier", m.path)
 
 	s.GET("/dashboard", m.emptyDashboard)
 	s.GET("/dashboard/*service-identifier", m.dashboard)
