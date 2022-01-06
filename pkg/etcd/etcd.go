@@ -51,20 +51,20 @@ func (etcd *etcd) Put(key string, value string) error {
 	return nil
 }
 
-func (etcd *etcd) Get(key string) (string, error) {
+func (etcd *etcd) Get(key string) (string, bool, error) {
 	if etcd.client == nil {
-		return "", errors.New("etcd not supported")
+		return "", false, errors.New("etcd not supported")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	resp, err := etcd.client.Get(ctx, key)
 	cancel()
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	if len(resp.Kvs) != 1 {
-		return "", nil
+		return "", false, nil
 	}
-	return string(resp.Kvs[0].Value), nil
+	return string(resp.Kvs[0].Value), true, nil
 }
 
 func (etcd *etcd) GetWithPrefix(prefix string) ([]string, []string, error) {

@@ -13,8 +13,7 @@ import (
 )
 
 func (m Management) newBlueprint(ctx *gin.Context) {
-	// todo userid
-	userid := "test_user"
+	userid, _ := ctx.Cookie("userid")
 	type BlueprintReq struct {
 		BlueprintName string `json:"blueprintName"`
 	}
@@ -33,8 +32,7 @@ func (m Management) newBlueprint(ctx *gin.Context) {
 }
 
 func (m Management) copyBlueprint(ctx *gin.Context) {
-	// todo userid
-	userid := "test_user"
+	userid, _ := ctx.Cookie("userid")
 	type BlueprintReq struct {
 		BlueprintName string `json:"blueprintName"`
 		FileName      string `json:"fileName"`
@@ -67,8 +65,7 @@ func (m Management) copyBlueprint(ctx *gin.Context) {
 }
 
 func (m Management) renameBlueprint(ctx *gin.Context) {
-	// todo userid
-	userid := "test_user"
+	userid, _ := ctx.Cookie("userid")
 	type BlueprintReq struct {
 		BlueprintName string `json:"blueprintName"`
 	}
@@ -78,7 +75,7 @@ func (m Management) renameBlueprint(ctx *gin.Context) {
 		return
 	}
 	key := m.fullKey(userid, reqInfo.BlueprintName)
-	value, err := etcd.Dao.Get(key)
+	value, _, err := etcd.Dao.Get(key)
 	if err != nil {
 		log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, nil)
@@ -96,8 +93,7 @@ func (m Management) renameBlueprint(ctx *gin.Context) {
 }
 
 func (m Management) savetoBlueprint(ctx *gin.Context) {
-	// todo userid
-	userid := "test_user"
+	userid, _ := ctx.Cookie("userid")
 	type BlueprintReq struct {
 		BlueprintName string `json:"blueprintName"`
 		FileName      string `json:"filename"`
@@ -127,8 +123,7 @@ func (m Management) savetoBlueprint(ctx *gin.Context) {
 }
 
 func (m Management) appendBlueprint(ctx *gin.Context) {
-	// todo userid
-	userid := "test_user"
+	userid, _ := ctx.Cookie("userid")
 	type BlueprintReq struct {
 		BlueprintName string   `json:"blueprintName"`
 		FileName      string   `json:"filename"`
@@ -161,8 +156,7 @@ func (m Management) appendBlueprint(ctx *gin.Context) {
 }
 
 func (m Management) deleteBlueprintMethod(ctx *gin.Context) {
-	// todo userid
-	userid := "test_user"
+	userid, _ := ctx.Cookie("userid")
 	type BlueprintReq struct {
 		BlueprintName string `json:"blueprintName"`
 		FileName      string `json:"fileName"`
@@ -191,8 +185,7 @@ func (m Management) deleteBlueprintMethod(ctx *gin.Context) {
 }
 
 func (m Management) delBlueprint(ctx *gin.Context) {
-	// todo userid
-	userid := "test_user"
+	userid, _ := ctx.Cookie("userid")
 	type BlueprintReq struct {
 		BlueprintName string `json:"blueprintName"`
 	}
@@ -243,7 +236,7 @@ func (m Management) allUserBlueprintsMeta(ctx context.Context, userid string) []
 func (m Management) blueprintMethods(ctx context.Context, userid string, blueprintIdentifier string) ([]*BlueprintMethodInfo, error) {
 	info := []*BlueprintMethodInfo{}
 	key := m.fullKey(userid, blueprintIdentifier)
-	value, err := etcd.Dao.Get(key)
+	value, _, err := etcd.Dao.Get(key)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +248,7 @@ func (m Management) blueprintMethods(ctx context.Context, userid string, bluepri
 
 func (m Management) appendBlueprintMethod(ctx context.Context, key string, newMethod *BlueprintMethodInfo) error {
 	info := []*BlueprintMethodInfo{}
-	value, err := etcd.Dao.Get(key)
+	value, _, err := etcd.Dao.Get(key)
 	if err != nil {
 		return err
 	}
@@ -282,7 +275,7 @@ func (m Management) appendBlueprintMethod(ctx context.Context, key string, newMe
 
 func (m Management) reduceBlueprintMethod(ctx context.Context, key string, deleteMethod *BlueprintMethodInfo) error {
 	info := []*BlueprintMethodInfo{}
-	value, err := etcd.Dao.Get(key)
+	value, _, err := etcd.Dao.Get(key)
 	if err != nil {
 		return err
 	}

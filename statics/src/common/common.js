@@ -234,6 +234,18 @@ var setupRequestEditor = function() {
     });
 };
 
+let signOutReq = function(){
+    const reqButton = document.getElementById("sign-out");
+    reqButton.onclick = function() {
+        fetch("/management/api/signOut", {
+            method: "POST",
+        }).then((json) => {
+            alert("sign out successfully!")
+            document.location.replace("/management/login");
+        })
+    }
+}
+
 window.addEventListener('load', setupCodeMirror);
 window.addEventListener('load', setupPreviewTrigger);
 window.addEventListener('load', fillMethod);
@@ -241,3 +253,4 @@ window.addEventListener('load', setupClickSend);
 window.addEventListener('load', serviceMenuLiveSearch);
 window.addEventListener('load', clickFirstMethod);
 window.addEventListener('load', setupRequestEditor);
+window.addEventListener('load', signOutReq);

@@ -32,7 +32,18 @@
         </div>
     </div>
 
-    <div class="col-4"></div>
+    <div class="col-4">
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end p-1">
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                    {{.UserId}}
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                    <li><a class="dropdown-item" id="sign-out" href="#">Sign out</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
 </div>
 
 {{end}}

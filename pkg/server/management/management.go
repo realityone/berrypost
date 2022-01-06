@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/jhump/protoreflect/dynamic"
@@ -94,6 +95,7 @@ func (m Management) addressUpdate(ctx *gin.Context) {
 	reqInfo.TargetAddr = strings.Replace(reqInfo.TargetAddr, " ", "", -1)
 	err := etcd.Dao.Put(reqInfo.ProtoName, reqInfo.TargetAddr)
 	if err != nil {
+		ctx.Error(err)
 		ctx.JSON(http.StatusInternalServerError, nil)
 	}
 	ctx.JSON(http.StatusOK, nil)
@@ -217,9 +219,7 @@ func (m Management) findProtoFileByServiceIdentifier(ctx context.Context, servic
 	return nil, false
 }
 
-func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string) (*InvokePage, error) {
-	// todo: userid
-	userid := "test_user"
+func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string, userid string) (*InvokePage, error) {
 	fileProfile, ok := m.findProtoFileByServiceIdentifier(ctx, serviceIdentifier)
 	if !ok {
 		return nil, errors.Errorf("Failed to find package profile from service identifier: %q", serviceIdentifier)
@@ -271,9 +271,7 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 	return page, nil
 }
 
-func (m Management) makeBlueprintPage(ctx context.Context, blueprintIdentifier string) (*BlueprintPage, error) {
-	//todo: userid
-	userid := "test_user"
+func (m Management) makeBlueprintPage(ctx context.Context, blueprintIdentifier string, userid string) (*BlueprintPage, error) {
 	info, err := m.blueprintMethods(ctx, userid, blueprintIdentifier)
 	if err != nil {
 		return nil, err
@@ -285,10 +283,9 @@ func (m Management) makeBlueprintPage(ctx context.Context, blueprintIdentifier s
 	page := &BlueprintPage{
 		Meta:                m.server.Meta(),
 		BlueprintIdentifier: blueprintIdentifier,
-		//PackageName:       fileProfile.ProtoPackage.FileDescriptor.GetFullyQualifiedName(),
-		PreferTarget: blueprintIdentifier,
-		ProtoFiles:   m.allProtoFiles(ctx),
-		Blueprints:   m.allUserBlueprints(ctx, userid),
+		PreferTarget:        blueprintIdentifier,
+		ProtoFiles:          m.allProtoFiles(ctx),
+		Blueprints:          m.allUserBlueprints(ctx, userid),
 	}
 	page.Services = make([]*Service, 0, len(meta.Methods))
 	for _, info := range meta.Methods {
@@ -372,40 +369,139 @@ func (m Management) login(ctx *gin.Context) {
 		Meta: m.server.Meta(),
 	})
 }
+func (m Management) register(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "register.html", &LoginPage{
+		Meta: m.server.Meta(),
+	})
+}
+
+func (m Management) signIn(ctx *gin.Context) {
+	type RespBody struct {
+		Userid   string `json:"userid"`
+		Password string `json:"password"`
+	}
+	var reqInfo RespBody
+	if err := ctx.BindJSON(&reqInfo); err != nil {
+		ctx.Error(err)
+		return
+	}
+	ok, err := m.userVerify(ctx, reqInfo.Userid, reqInfo.Password)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, nil)
+		return
+	}
+	if !ok {
+		ctx.JSON(http.StatusOK, false)
+		return
+	}
+	var hmacSampleSecret []byte
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"userid": reqInfo.Userid,
+		"status": "ok",
+	})
+	tokenString, err := token.SignedString(hmacSampleSecret)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, nil)
+		return
+	}
+	ctx.SetCookie("session", tokenString, 3600, "", "", true, true)
+	ctx.SetCookie("userid", reqInfo.Userid, 3600, "", "", true, true)
+	ctx.JSON(http.StatusOK, true)
+}
+
+func (m Management) signUp(ctx *gin.Context) {
+	type RespBody struct {
+		Userid   string `json:"userid"`
+		Password string `json:"password"`
+	}
+	var reqInfo RespBody
+	if err := ctx.BindJSON(&reqInfo); err != nil {
+		ctx.Error(err)
+		return
+	}
+	userKey := m.userKey(reqInfo.Userid)
+	_, ok, err := etcd.Dao.Get(userKey)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, nil)
+		return
+	}
+	if ok {
+		ctx.JSON(http.StatusOK, false)
+		return
+	}
+	if err = etcd.Dao.Put(userKey, reqInfo.Password); err != nil {
+		ctx.JSON(http.StatusInternalServerError, nil)
+		return
+	}
+	ctx.JSON(http.StatusOK, true)
+}
+
+func (m Management) signOut(ctx *gin.Context) {
+	ctx.SetCookie("session", "", -1, "", "", true, true)
+	ctx.SetCookie("userid", "", -1, "", "", true, true)
+	ctx.JSON(http.StatusOK, nil)
+}
+
+func (m Management) userVerify(ctx *gin.Context, userid string, password string) (bool, error) {
+	userKey := m.userKey(userid)
+	pw, ok, err := etcd.Dao.Get(userKey)
+	if err != nil {
+		return false, err
+	}
+	if ok && pw != password {
+		return false, nil
+	}
+	return true, nil
+}
 
 func (m Management) invoke(ctx *gin.Context) {
+	userid, err := ctx.Cookie("userid")
 	serviceIdentifier := ctx.Param("service-identifier")
 	serviceIdentifier = strings.TrimPrefix(serviceIdentifier, "/")
-	page, err := m.makeInvokePage(ctx, serviceIdentifier)
+
+	page, err := m.makeInvokePage(ctx, serviceIdentifier, userid)
 	if err != nil {
 		ctx.Error(err)
 		return
+	}
+	if err == nil {
+		page.UserId = userid
 	}
 	ctx.HTML(http.StatusOK, "invoke.html", page)
 }
 
 func (m Management) emptyInvoke(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "invoke.html", &InvokePage{
+	page := &InvokePage{
 		Meta:       m.server.Meta(),
 		ProtoFiles: m.allProtoFiles(ctx),
-	})
+	}
+	userid, err := ctx.Cookie("userid")
+	if err == nil {
+		page.UserId = userid
+	}
+	ctx.HTML(http.StatusOK, "invoke.html", page)
 }
 
 func (m Management) emptyBlueprint(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "blueprint.html", &BlueprintPage{
+	userid, _ := ctx.Cookie("userid")
+	page := &BlueprintPage{
 		Meta:       m.server.Meta(),
-		Blueprints: m.allUserBlueprintsMeta(ctx, "test_user"),
-	})
+		Blueprints: m.allUserBlueprintsMeta(ctx, userid),
+	}
+	page.UserId = userid
+	ctx.HTML(http.StatusOK, "blueprint.html", page)
 }
 
 func (m Management) blueprint(ctx *gin.Context) {
+	userid, err := ctx.Cookie("userid")
 	blueprintIdentifier := ctx.Param("blueprint-identifier")
 	blueprintIdentifier = strings.TrimPrefix(blueprintIdentifier, "/")
-	page, err := m.makeBlueprintPage(ctx, blueprintIdentifier)
+	page, err := m.makeBlueprintPage(ctx, blueprintIdentifier, userid)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
+	page.UserId = userid
 	ctx.HTML(http.StatusOK, "blueprint.html", page)
 }
 
@@ -417,9 +513,15 @@ func (m Management) emptyDashboard(ctx *gin.Context) {
 }
 
 func (m Management) dashboard(ctx *gin.Context) {
+	userid, err := ctx.Cookie("userid")
+	if err != nil {
+		//todo admin鉴权
+		ctx.Error(err)
+		return
+	}
 	serviceIdentifier := ctx.Param("service-identifier")
 	serviceIdentifier = strings.TrimPrefix(serviceIdentifier, "/")
-	page, err := m.makeInvokePage(ctx, serviceIdentifier)
+	page, err := m.makeInvokePage(ctx, serviceIdentifier, userid)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -438,18 +540,25 @@ func (m Management) Setup(s *server.Server) error {
 	r.GET("/rediect-to-example", m.redirectToFirstService)
 	r.GET("/invoke", m.emptyInvoke)
 	r.GET("/invoke/*service-identifier", m.invoke)
-	r.GET("/blueprint", m.emptyBlueprint)
-	r.GET("/blueprint/*blueprint-identifier", m.blueprint)
+	r.GET("/blueprint", m.Authorize(), m.emptyBlueprint)
+	r.GET("/blueprint/*blueprint-identifier", m.Authorize(), m.blueprint)
 	r.GET("/login", m.login)
+	r.GET("/register", m.register)
 
 	rAPI := s.Group("/management/api")
 	rAPI.GET("/_intro", m.intro)
 	rAPI.GET("/packages", m.listPackages)
 	rAPI.GET("/packages/:package_name", m.getPackage)
 	rAPI.GET("/service-alias", m.listServiceAlias)
+
 	rAPI.POST("/update", m.addressUpdate)
 	rAPI.POST("/getMethods", m.getMethods)
+	rAPI.POST("/signIn", m.signIn)
+	rAPI.POST("/signUp", m.signUp)
+	rAPI.POST("/signOut", m.signOut)
+
 	b := rAPI.Group("/blueprint")
+	b.Use(m.Authorize())
 	b.POST("/new", m.newBlueprint)
 	b.POST("/delete", m.delBlueprint)
 	b.POST("/copy", m.copyBlueprint)
@@ -463,10 +572,61 @@ func (m Management) Setup(s *server.Server) error {
 	return nil
 }
 
+func (m Management) Authorize() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		cSession, err1 := ctx.Request.Cookie("session")
+		cUserid, err2 := ctx.Request.Cookie("userid")
+		if err1 == nil && err2 == nil {
+			session := cSession.Value
+			userid := cUserid.Value
+			ok, err := m.AuthorizeSession(ctx, session, userid)
+			if ok == true && err == nil {
+				ctx.Next()
+				return
+			}
+		}
+		ctx.Abort()
+		ctx.HTML(http.StatusOK, "login.html", &LoginPage{
+			Meta: m.server.Meta(),
+		})
+		return
+	}
+}
+
+func (m Management) AuthorizeSession(ctx context.Context, tokenString string, userid string) (bool, error) {
+	var hmacSampleSecret []byte
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return false, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return hmacSampleSecret, nil
+	})
+	if err != nil {
+		return false, err
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return false, err
+	}
+	status := claims["status"]
+	if status != "ok" {
+		return false, err
+	}
+	if claims["userid"] != userid {
+		return false, err
+	}
+	return true, nil
+}
+
 func (m Management) Name() string {
 	return "management-server"
 }
 
 func (m Management) Meta() map[string]string {
 	return nil
+}
+
+func (m Management) userKey(userid string) string {
+	//todo: 键设计
+	return "/users/" + userid
 }

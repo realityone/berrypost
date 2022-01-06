@@ -27,17 +27,18 @@ type InvokePage struct {
 	Services          []*Service
 	ProtoFiles        []*ProtoFileMeta
 	Blueprints        []string
+	UserId            string
 }
 
 type BlueprintPage struct {
 	Meta                server.ServerMeta
 	BlueprintIdentifier string
-	PackageName         string
 	PreferTarget        string
 	DefaultTarget       string
 	Services            []*Service
 	ProtoFiles          []*ProtoFileMeta
 	Blueprints          []string
+	UserId              string
 }
 
 type LoginPage struct {
