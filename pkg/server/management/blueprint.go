@@ -3,6 +3,8 @@ package management
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	"net/http"
@@ -31,7 +33,7 @@ func (m Management) newBlueprint(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, nil)
 }
 
-func (m Management) copyBlueprint(ctx *gin.Context) {
+func (m Management) copyBlueprintFromFile(ctx *gin.Context) {
 	userid, _ := ctx.Cookie("userid")
 	type BlueprintReq struct {
 		BlueprintName string `json:"blueprintName"`
@@ -42,8 +44,8 @@ func (m Management) copyBlueprint(ctx *gin.Context) {
 		log.Error(err)
 		return
 	}
-	reqInfo.BlueprintName = strings.Replace(reqInfo.BlueprintName, " ", "", -1)
-	reqInfo.FileName = strings.Replace(reqInfo.FileName, " ", "", -1)
+	reqInfo.BlueprintName = m.trim(reqInfo.BlueprintName)
+	reqInfo.FileName = m.trim(reqInfo.FileName)
 	methods, err := m.getMethodsByService(ctx, reqInfo.FileName)
 	if err != nil {
 		log.Error(err)
@@ -62,6 +64,54 @@ func (m Management) copyBlueprint(ctx *gin.Context) {
 		}
 	}
 	ctx.JSON(http.StatusOK, nil)
+}
+
+func (m Management) copyBlueprint(ctx *gin.Context) {
+	fmt.Println(11111)
+	userid, _ := ctx.Cookie("userid")
+	type BlueprintReq struct {
+		Token   string `json:"token"`
+		NewName string `json:"newName"`
+	}
+	var reqInfo BlueprintReq
+	if err := ctx.BindJSON(&reqInfo); err != nil {
+		log.Error(err)
+		return
+	}
+	claims, err := m.JwtDecode(ctx, reqInfo.Token)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	fromUserid := claims["userid"].(string)
+	blueprintName := claims["blueprintName"].(string)
+	fromKey := m.fullKey(fromUserid, blueprintName)
+	toKey := m.fullKey(userid, reqInfo.NewName)
+	ok, err := m.CopyBlueprint(ctx, fromKey, toKey)
+	if err != nil {
+		log.Error(err)
+		ctx.JSON(http.StatusInternalServerError, nil)
+		return
+	}
+	ctx.JSON(http.StatusOK, ok)
+}
+
+func (m Management) CopyBlueprint(ctx context.Context, fromKey string, toKey string) (bool, error) {
+	fromValue, _, err := etcd.Dao.Get(fromKey)
+	if err != nil {
+		return false, err
+	}
+	_, ok, err := etcd.Dao.Get(toKey)
+	if err != nil {
+		return false, err
+	}
+	if ok {
+		return false, nil
+	}
+	if err := etcd.Dao.Put(toKey, fromValue); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (m Management) renameBlueprint(ctx *gin.Context) {
@@ -104,9 +154,9 @@ func (m Management) savetoBlueprint(ctx *gin.Context) {
 		log.Error(err)
 		return
 	}
-	reqInfo.BlueprintName = strings.Replace(reqInfo.BlueprintName, " ", "", -1)
-	reqInfo.FileName = strings.Replace(reqInfo.FileName, " ", "", -1)
-	reqInfo.MethodName = strings.Replace(reqInfo.MethodName, " ", "", -1)
+	reqInfo.BlueprintName = m.trim(reqInfo.BlueprintName)
+	reqInfo.FileName = m.trim(reqInfo.FileName)
+	reqInfo.MethodName = m.trim(reqInfo.MethodName)
 	split := strings.Split(reqInfo.MethodName, "/")
 	methodRawName := split[len(split)-1]
 	key := m.fullKey(userid, reqInfo.BlueprintName)
@@ -135,10 +185,10 @@ func (m Management) appendBlueprint(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, nil)
 		return
 	}
-	reqInfo.BlueprintName = strings.Replace(reqInfo.BlueprintName, " ", "", -1)
-	reqInfo.FileName = strings.Replace(reqInfo.FileName, " ", "", -1)
+	reqInfo.BlueprintName = m.trim(reqInfo.BlueprintName)
+	reqInfo.FileName = m.trim(reqInfo.FileName)
 	for _, method := range reqInfo.MethodName {
-		method = strings.Replace(method, " ", "", -1)
+		method = m.trim(method)
 		split := strings.Split(method, "/")
 		methodRawName := split[len(split)-1]
 		key := m.fullKey(userid, reqInfo.BlueprintName)
@@ -167,8 +217,8 @@ func (m Management) deleteBlueprintMethod(ctx *gin.Context) {
 		log.Error(err)
 		return
 	}
-	reqInfo.BlueprintName = strings.Replace(reqInfo.BlueprintName, " ", "", -1)
-	reqInfo.MethodName = strings.Replace(reqInfo.MethodName, " ", "", -1)
+	reqInfo.BlueprintName = m.trim(reqInfo.BlueprintName)
+	reqInfo.MethodName = m.trim(reqInfo.MethodName)
 	split := strings.Split(reqInfo.MethodName, "/")
 	methodRawName := split[len(split)-1]
 	key := m.fullKey(userid, reqInfo.BlueprintName)
@@ -184,6 +234,31 @@ func (m Management) deleteBlueprintMethod(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, nil)
 }
 
+func (m Management) shareBlueprint(ctx *gin.Context) {
+	userid, _ := ctx.Cookie("userid")
+	type BlueprintReq struct {
+		BlueprintName string `json:"blueprintName"`
+	}
+	var reqInfo BlueprintReq
+	if err := ctx.BindJSON(&reqInfo); err != nil {
+		log.Error(err)
+		return
+	}
+	reqInfo.BlueprintName = m.trim(reqInfo.BlueprintName)
+	var hmacSampleSecret []byte
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"userid":        userid,
+		"blueprintName": reqInfo.BlueprintName,
+	})
+	tokenString, err := token.SignedString(hmacSampleSecret)
+	if err != nil {
+		log.Error(err)
+		ctx.JSON(http.StatusInternalServerError, nil)
+	}
+	url := "/management/public?token=" + tokenString
+	ctx.JSON(http.StatusOK, url)
+}
+
 func (m Management) delBlueprint(ctx *gin.Context) {
 	userid, _ := ctx.Cookie("userid")
 	type BlueprintReq struct {
@@ -194,7 +269,7 @@ func (m Management) delBlueprint(ctx *gin.Context) {
 		log.Error(err)
 		return
 	}
-	reqInfo.BlueprintName = strings.Replace(reqInfo.BlueprintName, " ", "", -1)
+	reqInfo.BlueprintName = m.trim(reqInfo.BlueprintName)
 	key := m.fullKey(userid, reqInfo.BlueprintName)
 	if err := etcd.Dao.Delete(key); err != nil {
 		log.Error(err)
@@ -312,6 +387,10 @@ func (m Management) putBlueprint(key string, info []*BlueprintMethodInfo) error 
 func (m Management) fullKey(userid string, blueprintIdentifier string) string {
 	//todo: 键设计
 	return "/blueprint/" + userid + "/" + blueprintIdentifier
+}
+
+func (m Management) trim(str string) string {
+	return strings.Replace(str, " ", "", -1)
 }
 
 func (m Management) getMethodsByService(ctx context.Context, serviceIdentifier string) ([]string, error) {

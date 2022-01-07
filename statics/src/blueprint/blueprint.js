@@ -86,7 +86,6 @@ let newBlueprintReq = function(){
 let deleteMethodModal = function(){
     const modelButton = document.getElementById("delete-method-modal");
     modelButton.onclick = function() {
-        // todo check user token
         const myModal = new Modal(document.getElementById('deleteMethodModal'))
         myModal.show()
     }
@@ -114,7 +113,6 @@ let deleteMethodReq = function(){
 let deleteBlueprintModal = function(){
     const modelButton = document.getElementById("delete-blueprint-modal");
     modelButton.onclick = function() {
-        // todo check user token
         const myModal = new Modal(document.getElementById('deleteBlueprintModal'))
         myModal.show()
     }
@@ -136,6 +134,38 @@ let deleteBlueprintReq = function(){
     }
 }
 
+let shareBlueprint = function(){
+    const reqButton = document.getElementById("share-blueprint");
+    reqButton.onclick = function() {
+        const blueprintName = document.getElementById("serviceMenu").innerText;
+        fetch("/management/api/blueprint/share", {
+            method: "POST",
+            body: JSON.stringify({
+                'blueprintName' : blueprintName,
+            }),
+        }).then((json) => {
+            return json.json()
+        }).then((data) => {
+            let host = window.location.host;
+            const url = document.getElementById("url");
+            url.value = host + data;
+            const reqButton = document.getElementById("copy-url");
+            reqButton.innerText = "Copy"
+            const myModal = new Modal(document.getElementById('shareBlueprintModal'));
+            myModal.show();
+        })
+    }
+}
+
+let copyUrl = function(){
+    const reqButton = document.getElementById("copy-url");
+    reqButton.onclick = function() {
+        $('#url').select();
+        document.execCommand('Copy');
+        reqButton.innerText = "Copied"
+    }
+}
+
 window.addEventListener('load', initSel);
 window.addEventListener('load', newMethodModal);
 window.addEventListener('load', newMethodReq);
@@ -145,4 +175,6 @@ window.addEventListener('load', deleteMethodModal);
 window.addEventListener('load', deleteMethodReq);
 window.addEventListener('load', deleteBlueprintModal);
 window.addEventListener('load', deleteBlueprintReq);
+window.addEventListener('load', shareBlueprint);
+window.addEventListener('load', copyUrl);
 

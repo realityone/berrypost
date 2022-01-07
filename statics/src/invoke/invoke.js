@@ -4,7 +4,6 @@ import { Modal } from 'bootstrap';
 let copyBlueprintModal = function(){
     const modelButton = document.getElementById("copy-blueprint-modal");
     modelButton.onclick = function() {
-        // todo check user token
         const myModal = new Modal(document.getElementById('copyBlueprintModal'))
         myModal.show()
     }
@@ -15,7 +14,7 @@ let copyBlueprintReq = function(){
     reqButton.onclick = function() {
         const blueprintName = document.getElementById("copy-blueprint-name").value;
         const FileName = document.getElementById("serviceMenu").innerText;
-        fetch("/management/api/blueprint/copy", {
+        fetch("/management/api/blueprint/copyFromFile", {
             method: "POST",
             body: JSON.stringify({
                 'blueprintName' : blueprintName,

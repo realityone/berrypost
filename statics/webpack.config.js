@@ -36,6 +36,10 @@ module.exports = {
             import: './src/common/common.js',
             dependOn: 'vendor'
         },
+        public: {
+            import: './src/public/public.js',
+            dependOn: 'vendor'
+        },
         vendor: './src/vendor.js',
     },
     output: {

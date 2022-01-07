@@ -91,12 +91,13 @@ func (m Management) addressUpdate(ctx *gin.Context) {
 		ctx.Error(err)
 		return
 	}
-	reqInfo.ProtoName = strings.Replace(reqInfo.ProtoName, " ", "", -1)
-	reqInfo.TargetAddr = strings.Replace(reqInfo.TargetAddr, " ", "", -1)
+	reqInfo.ProtoName = m.trim(reqInfo.ProtoName)
+	reqInfo.TargetAddr = m.trim(reqInfo.TargetAddr)
 	err := etcd.Dao.Put(reqInfo.ProtoName, reqInfo.TargetAddr)
 	if err != nil {
 		ctx.Error(err)
 		ctx.JSON(http.StatusInternalServerError, nil)
+		return
 	}
 	ctx.JSON(http.StatusOK, nil)
 }
@@ -337,6 +338,78 @@ func (m Management) makeBlueprintPage(ctx context.Context, blueprintIdentifier s
 	return page, nil
 }
 
+func (m Management) makePublicBlueprintPage(ctx context.Context, token string) (*BlueprintPage, error) {
+	claims, err := m.JwtDecode(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+	userid := claims["userid"].(string)
+	blueprintIdentifier := claims["blueprintName"].(string)
+	info, err := m.blueprintMethods(ctx, userid, blueprintIdentifier)
+	if err != nil {
+		return nil, err
+	}
+	meta := &BlueprintMeta{
+		blueprintIdentifier: blueprintIdentifier,
+		Methods:             info,
+	}
+	page := &BlueprintPage{
+		Meta:                m.server.Meta(),
+		BlueprintIdentifier: blueprintIdentifier,
+		PreferTarget:        blueprintIdentifier,
+		ProtoFiles:          m.allProtoFiles(ctx),
+		Blueprints:          []string{blueprintIdentifier},
+	}
+	page.Services = make([]*Service, 0, len(meta.Methods))
+	for _, info := range meta.Methods {
+		serviceIdentifier := info.Filename
+		fileProfile, ok := m.findProtoFileByServiceIdentifier(ctx, serviceIdentifier)
+
+		if !ok {
+			return nil, errors.Errorf("Failed to find package profile from service identifier: %q", serviceIdentifier)
+		}
+		preferTarget, ok := fileProfile.Common.Annotation[AppBerrypostManagementInvokePreferTarget]
+		if ok {
+			page.PreferTarget = preferTarget
+		}
+		defaultTarget, ok := fileProfile.Common.Annotation[AppBerrypostManagementInvokeDefaultTarget]
+		if ok {
+			page.DefaultTarget = defaultTarget
+		}
+		for _, s := range fileProfile.ProtoPackage.FileDescriptor.GetServices() {
+			ps := &Service{
+				Name:     s.GetName(),
+				FileName: serviceIdentifier,
+			}
+			ps.Methods = make([]*Method, 0, len(s.GetMethods()))
+			for _, m := range s.GetMethods() {
+				if m.GetName() != info.MethodName {
+					continue
+				}
+				pm := &Method{
+					Name:           m.GetName(),
+					GRPCMethodName: fmt.Sprintf("/%s/%s", s.GetFullyQualifiedName(), m.GetName()),
+					ServiceMethod:  fmt.Sprintf("%s.%s", s.GetName(), m.GetName()),
+					PreferTarget:   preferTarget,
+				}
+				descMarshaler := jsonpb.Marshaler{
+					EmitDefaults: true,
+					Indent:       "    ",
+				}
+				inputSchema, err := descMarshaler.MarshalToString(dynamic.NewMessage(m.GetInputType()))
+				if err != nil {
+					logrus.Warn("Failed to marshal method: %q input type as string: %+v", m.GetFullyQualifiedName(), err)
+				}
+				pm.InputSchema = inputSchema
+				ps.Methods = append(ps.Methods, pm)
+				break
+			}
+			page.Services = append(page.Services, ps)
+		}
+	}
+	return page, nil
+}
+
 func (m Management) firstServiceAlias(ctx context.Context) string {
 	serviceAlias, err := m.protoManager.ListServiceAlias(ctx)
 	if err != nil {
@@ -385,28 +458,48 @@ func (m Management) signIn(ctx *gin.Context) {
 		ctx.Error(err)
 		return
 	}
-	ok, err := m.userVerify(ctx, reqInfo.Userid, reqInfo.Password)
+	ok, err := m.userSignIn(ctx, reqInfo.Userid, reqInfo.Password)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, nil)
 		return
 	}
+	ctx.JSON(http.StatusOK, ok)
+}
+
+func (m Management) userSignIn(ctx *gin.Context, userid string, password string) (bool, error) {
+	ok, err := m.userVerify(ctx, userid, password)
+	if err != nil {
+		return false, err
+	}
 	if !ok {
-		ctx.JSON(http.StatusOK, false)
-		return
+		return false, nil
 	}
 	var hmacSampleSecret []byte
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userid": reqInfo.Userid,
-		"status": "ok",
+		"userid": userid,
 	})
 	tokenString, err := token.SignedString(hmacSampleSecret)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
-		return
+		return false, err
 	}
 	ctx.SetCookie("session", tokenString, 3600, "", "", true, true)
-	ctx.SetCookie("userid", reqInfo.Userid, 3600, "", "", true, true)
-	ctx.JSON(http.StatusOK, true)
+	ctx.SetCookie("userid", userid, 3600, "", "", true, true)
+	return true, nil
+}
+
+func (m Management) userSignUp(ctx *gin.Context, userid string, password string) (bool, error) {
+	userKey := m.userKey(userid)
+	_, ok, err := etcd.Dao.Get(userKey)
+	if err != nil {
+		return false, err
+	}
+	if ok {
+		return false, nil
+	}
+	if err = etcd.Dao.Put(userKey, password); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (m Management) signUp(ctx *gin.Context) {
@@ -419,21 +512,12 @@ func (m Management) signUp(ctx *gin.Context) {
 		ctx.Error(err)
 		return
 	}
-	userKey := m.userKey(reqInfo.Userid)
-	_, ok, err := etcd.Dao.Get(userKey)
+	ok, err := m.userSignUp(ctx, reqInfo.Userid, reqInfo.Password)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, nil)
 		return
 	}
-	if ok {
-		ctx.JSON(http.StatusOK, false)
-		return
-	}
-	if err = etcd.Dao.Put(userKey, reqInfo.Password); err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
-		return
-	}
-	ctx.JSON(http.StatusOK, true)
+	ctx.JSON(http.StatusOK, ok)
 }
 
 func (m Management) signOut(ctx *gin.Context) {
@@ -442,7 +526,7 @@ func (m Management) signOut(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, nil)
 }
 
-func (m Management) userVerify(ctx *gin.Context, userid string, password string) (bool, error) {
+func (m Management) userVerify(ctx context.Context, userid string, password string) (bool, error) {
 	userKey := m.userKey(userid)
 	pw, ok, err := etcd.Dao.Get(userKey)
 	if err != nil {
@@ -505,6 +589,23 @@ func (m Management) blueprint(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "blueprint.html", page)
 }
 
+func (m Management) publicBlueprint(ctx *gin.Context) {
+	userid, err := ctx.Cookie("userid")
+	req := new(struct {
+		Token string `form:"token"`
+	})
+	if err := ctx.Bind(req); err != nil {
+		return
+	}
+	page, err := m.makePublicBlueprintPage(ctx, req.Token)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	page.UserId = userid
+	ctx.HTML(http.StatusOK, "public.html", page)
+}
+
 func (m Management) emptyDashboard(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "dashboard.html", &InvokePage{
 		Meta:       m.server.Meta(),
@@ -542,6 +643,7 @@ func (m Management) Setup(s *server.Server) error {
 	r.GET("/invoke/*service-identifier", m.invoke)
 	r.GET("/blueprint", m.Authorize(), m.emptyBlueprint)
 	r.GET("/blueprint/*blueprint-identifier", m.Authorize(), m.blueprint)
+	r.GET("/public", m.publicBlueprint)
 	r.GET("/login", m.login)
 	r.GET("/register", m.register)
 
@@ -551,20 +653,21 @@ func (m Management) Setup(s *server.Server) error {
 	rAPI.GET("/packages/:package_name", m.getPackage)
 	rAPI.GET("/service-alias", m.listServiceAlias)
 
-	rAPI.POST("/update", m.addressUpdate)
+	rAPI.POST("/addressUpdate", m.addressUpdate)
 	rAPI.POST("/getMethods", m.getMethods)
 	rAPI.POST("/signIn", m.signIn)
 	rAPI.POST("/signUp", m.signUp)
 	rAPI.POST("/signOut", m.signOut)
 
-	b := rAPI.Group("/blueprint")
-	b.Use(m.Authorize())
+	b := rAPI.Group("/blueprint", m.Authorize())
 	b.POST("/new", m.newBlueprint)
 	b.POST("/delete", m.delBlueprint)
+	b.POST("/copyFromFile", m.copyBlueprintFromFile)
 	b.POST("/copy", m.copyBlueprint)
 	b.POST("/append", m.savetoBlueprint)
 	b.POST("/appendList", m.appendBlueprint)
 	b.POST("/reduce", m.deleteBlueprintMethod)
+	b.POST("/share", m.shareBlueprint)
 
 	s.GET("/dashboard", m.emptyDashboard)
 	s.GET("/dashboard/*service-identifier", m.dashboard)
@@ -579,8 +682,8 @@ func (m Management) Authorize() gin.HandlerFunc {
 		if err1 == nil && err2 == nil {
 			session := cSession.Value
 			userid := cUserid.Value
-			ok, err := m.AuthorizeSession(ctx, session, userid)
-			if ok == true && err == nil {
+			claims, err := m.JwtDecode(ctx, session)
+			if err == nil && claims["userid"].(string) == userid {
 				ctx.Next()
 				return
 			}
@@ -593,7 +696,7 @@ func (m Management) Authorize() gin.HandlerFunc {
 	}
 }
 
-func (m Management) AuthorizeSession(ctx context.Context, tokenString string, userid string) (bool, error) {
+func (m Management) JwtDecode(ctx context.Context, tokenString string) (jwt.MapClaims, error) {
 	var hmacSampleSecret []byte
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -602,20 +705,13 @@ func (m Management) AuthorizeSession(ctx context.Context, tokenString string, us
 		return hmacSampleSecret, nil
 	})
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
-		return false, err
+		return nil, err
 	}
-	status := claims["status"]
-	if status != "ok" {
-		return false, err
-	}
-	if claims["userid"] != userid {
-		return false, err
-	}
-	return true, nil
+	return claims, nil
 }
 
 func (m Management) Name() string {

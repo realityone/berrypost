@@ -7,7 +7,7 @@ let UpdateDB = function(){
     updateButton.onclick = function() {
         const targetAddrInput = document.getElementById("target-addr").value;
         const serviceInput = document.getElementById("serviceMenu").innerText;
-        fetch("/management/api/update", {
+        fetch("/management/api/addressUpdate", {
             method: "POST",
             body: JSON.stringify({
                 'targetAddrInput' : targetAddrInput,

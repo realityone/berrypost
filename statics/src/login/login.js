@@ -4,6 +4,7 @@ import '../vendor.js';
 let signInReq = function(){
     const reqButton = document.getElementById("sign-in");
     reqButton.onclick = function() {
+        const last = document.referrer
         const userid = document.getElementById("userid").value;
         const password = document.getElementById("password").value;
         fetch("/management/api/signIn", {
@@ -18,7 +19,7 @@ let signInReq = function(){
         }).then((data) => {
             if (data === true) {
                 alert("sign in successfully!")
-                document.location.replace("/management/invoke");
+                document.location.replace(last);
             } else {
                 alert("wrong userid/password!")
             }

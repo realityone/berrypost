@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{{ .Meta.Description }}">
+    <link rel="icon" href="/favicon.ico">
+    <title>{{ .Meta.Name }}</title>
+
+    <script src="/assets/statics/dist/vendor.bundle.js"></script>
+    <script src="/assets/statics/dist/common.bundle.js"></script>
+    <script src="/assets/statics/dist/public.bundle.js"></script>
+    <script src="/assets/statics/dist/select.bundle.js"></script>
+</head>
+
+<body class="h-100">
+    <div class="container-fluid status-bar bg-light">
+        {{template "public-status-bar" .}}
+    </div>
+
+    <div class="container-fluid main-panel">
+        <div class="row">
+            <div class="col-3 d-flex flex-column bg-white method-list">
+                {{template "method-list" .}}
+                {{template "public-bottom-left" .}}
+            </div>
+
+            <div class="col-5 d-flex flex-column border-start border-end request-panel">
+                {{template "request-panel" .}}
+                {{template "public-modal" .}}
+            </div>
+
+            <div class="col-4 response-panel pt-2 pb-2">
+                {{template "response-panel" .}}
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
