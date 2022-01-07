@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack')
 
 module.exports = {
     mode: 'production',
@@ -9,6 +10,34 @@ module.exports = {
         },
         invoke: {
             import: './src/invoke/invoke.js',
+            dependOn: 'vendor'
+        },
+        config: {
+            import: './src/config/config.js',
+            dependOn: 'vendor'
+        },
+        dashboard: {
+            import: './src/dashboard/dashboard.js',
+            dependOn: 'vendor'
+        },
+        blueprint: {
+            import: './src/blueprint/blueprint.js',
+            dependOn: 'vendor'
+        },
+        login: {
+            import: './src/login/login.js',
+            dependOn: 'vendor'
+        },
+        select: {
+            import: './src/bootstrap-select/bootstrap-select.js',
+            dependOn: 'vendor'
+        },
+        common: {
+            import: './src/common/common.js',
+            dependOn: 'vendor'
+        },
+        public: {
+            import: './src/public/public.js',
             dependOn: 'vendor'
         },
         vendor: './src/vendor.js',
@@ -32,4 +61,12 @@ module.exports = {
             type: 'asset/resource',
         }],
     },
+    plugins: [
+        new webpack.ProvidePlugin({
+            $: "jquery",
+            jQuery: "jquery",
+            "window.jQuery": "jquery"
+        })
+    ],
+
 };

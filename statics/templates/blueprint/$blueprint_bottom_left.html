@@ -1,0 +1,32 @@
+{{define "blueprint-bottom-left"}}
+
+<div class="d-flex justify-content-end bottom-left p-2">
+    <div class="btn-group p-1 justify-content-start" role="group" aria-label="Basic outlined example">
+        {{if ne .BlueprintIdentifier ""}}
+        <button type="button" class="btn btn-outline-primary" id="share-blueprint">
+            <i class="bi bi-share"></i>
+        </button>
+        {{end}}
+    </div>
+    <div class="btn-group p-1" role="group" aria-label="Basic outlined example">
+        {{if ne .BlueprintIdentifier ""}}
+        <button id="delete-method-modal" class="btn btn-outline-danger" type="button">
+            <i class="bi bi-x-circle"></i>
+        </button>
+        <button type="button" class="btn btn-outline-danger" id="delete-blueprint-modal">
+            <i class="bi bi-folder-minus"></i>
+        </button>
+        <button type="button" class="btn btn-outline-success" id="method-modal">
+            <i class="bi bi-plus-circle"></i>
+        </button>
+        {{end}}
+        <button type="button" class="btn btn-outline-success" id="blueprint-modal">
+            <i class="bi bi-folder-plus"></i>
+        </button>
+        <button type="button" class="btn btn-primary">
+            <a href="/management/invoke" style="text-decoration: none;color:white"><i class="bi bi-arrow-repeat"></i>Proto</a>
+        </button>
+    </div>
+</div>
+{{end}}
+

@@ -5,5 +5,6 @@ type Common struct {
 }
 
 const (
-	AppBerrypostManagementInvokePreferTarget = "app.berrypost.management.invoke.prefer.target"
+	AppBerrypostManagementInvokeDefaultTarget = "app.berrypost.management.invoke.default.target"
+	AppBerrypostManagementInvokePreferTarget  = "app.berrypost.management.invoke.prefer.target"
 )

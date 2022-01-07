@@ -1,21 +1,20 @@
-{{define "status-bar"}}
+{{define "blueprint-status-bar"}}
 
 <div class="row border-top border-bottom">
     <div class="col-4 d-flex align-items-center">
         <div class="dropdown">
             <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="serviceMenu"
                 data-bs-toggle="dropdown" aria-expanded="false">
-                {{if eq .ServiceIdentifier ""}}
+                {{if eq .BlueprintIdentifier ""}}
                 [Select To Start]
                 {{else}}
-                {{ .ServiceIdentifier }}
+                {{ .BlueprintIdentifier }}
                 {{end}}
             </button>
-            {{$link := .Link}}
             <ul id="serviceMenuContent" class="dropdown-menu scrollable-menu" role="menu" aria-labelledby="serviceMenu">
                 <input type="text" class="form-control" placeholder="Search..." id="serviceMenuSearch">
-                {{range $_, $pf := .ProtoFiles}}
-                <li><a class="dropdown-item" href="/management/{{$link}}/{{$pf.Meta.ImportPath}}">{{ $pf.Filename }}</a>
+                {{range $_, $pf := .Blueprints}}
+                <li><a class="dropdown-item" href="/management/blueprint/{{$pf}}">{{ $pf }}</a>
                 </li>
                 {{end}}
             </ul>
@@ -33,7 +32,20 @@
         </div>
     </div>
 
-    <div class="col-4"></div>
+    <div class="col-4">
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end p-1">
+            {{if ne .UserId ""}}
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                    {{.UserId}}
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                    <li><a class="dropdown-item" id="sign-out" href="#">Sign out</a></li>
+                </ul>
+            </div>
+            {{end}}
+        </div>
+    </div>
 </div>
 
 {{end}}

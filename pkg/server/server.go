@@ -77,7 +77,7 @@ func New(opts ...Option) *Server {
 		meta:       cfg.Meta,
 	}
 
-	templ := template.Must(template.ParseFS(berrypost.TemplateFS, "statics/templates/*.html"))
+	templ := template.Must(template.ParseFS(berrypost.TemplateFS, "statics/templates/*.html", "statics/templates/*/*.html"))
 	engine.SetHTMLTemplate(templ)
 
 	server.setupRouter()

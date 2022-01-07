@@ -1,0 +1,21 @@
+{{define "invoke-bottom-left"}}
+<div class="d-flex justify-content-end bottom-left p-2">
+    <div class="btn-group p-1" role="group" aria-label="Basic outlined example">
+        {{if ne .ServiceIdentifier ""}}
+        {{if ne .UserId ""}}
+        <button id="saveto-blueprint-modal" class="btn btn-outline-success" type="button">
+            <i class="bi bi-save"></i>
+        </button>
+        <button type="button" class="btn btn-outline-success" id="copy-blueprint-modal">
+            <i class="bi bi-folder-symlink"></i>
+        </button>
+        {{end}}
+        {{end}}
+        <button type="button" class="btn btn-primary">
+            <a href="/management/blueprint" style="text-decoration: none;color:white"><i class="bi bi-arrow-repeat" ></i>Blueprint</a>
+        </button>
+    </div>
+</div>
+
+{{end}}
+

@@ -1,0 +1,16 @@
+{{define "public-bottom-left"}}
+
+<div class="d-flex justify-content-end bottom-left p-2">
+    <div class="btn-group p-1" role="group" aria-label="Basic outlined example">
+        {{if ne .UserId ""}}
+        <button type="button" class="btn btn-outline-success" id="copy-blueprint-modal">
+            <i class="bi bi-folder-symlink"></i>
+        </button>
+        <button type="button" class="btn btn-outline-primary" onclick="window.location.href='/management/blueprint'">
+            My Blueprint
+        </button>
+        {{end}}
+    </div>
+</div>
+{{end}}
+
