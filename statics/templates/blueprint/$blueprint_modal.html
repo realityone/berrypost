@@ -32,6 +32,10 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3">
+                    <fieldset disabled>
+                        <label for="new-blueprint-name" class="col-form-label">Blueprint Name:</label>
+                        <input id="new-blueprint-name" class="form-control">
+                    </fieldset>
                     <label for="file-name" class="col-form-label">FileName:</label>
                     <br>
                     <select name="file-name" id="file-name" class="selectpicker form-control" data-live-search="true" title="Select a file">
@@ -64,6 +68,15 @@
             </div>
             <div class="modal-body">
                 Are you sure to delete this method from the blueprint?
+                <hr>
+                <fieldset disabled>
+                    <label for="deleteMethodModal-blueprint" class="col-form-label">Blueprint Name:</label>
+                    <input id="deleteMethodModal-blueprint" class="form-control">
+                </fieldset>
+                <fieldset disabled>
+                    <label for="deleteMethodModal-method" class="col-form-label">Method Name:</label>
+                    <input id="deleteMethodModal-method" class="form-control">
+                </fieldset>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -82,6 +95,11 @@
             </div>
             <div class="modal-body">
                 Are you sure to delete this blueprint?
+                <hr>
+                <fieldset disabled>
+                    <label for="deleteBlueprintModal-blueprint" class="col-form-label">Blueprint Name:</label>
+                    <input id="deleteBlueprintModal-blueprint" class="form-control">
+                </fieldset>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

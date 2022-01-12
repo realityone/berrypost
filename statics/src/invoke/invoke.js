@@ -1,9 +1,10 @@
 import '../vendor.js';
-import { Modal } from 'bootstrap';
+import {Modal} from 'bootstrap';
 
 let copyBlueprintModal = function(){
     const modelButton = document.getElementById("copy-blueprint-modal");
     modelButton.onclick = function() {
+        document.getElementById("copy-service-name").value = document.getElementById("serviceMenu").innerText;
         const myModal = new Modal(document.getElementById('copyBlueprintModal'))
         myModal.show()
     }
@@ -30,9 +31,9 @@ let copyBlueprintReq = function(){
 let savetoBlueprintModal = function(){
     const modelButton = document.getElementById("saveto-blueprint-modal");
     modelButton.onclick = function() {
-        // todo check user token
-        const myModal = new Modal(document.getElementById('savetoBlueprintModal'))
-        myModal.show()
+        document.getElementById("saveto-method-name").value = document.getElementById("method-name").value;
+        const myModal = new Modal(document.getElementById('savetoBlueprintModal'));
+        myModal.show();
     }
 }
 

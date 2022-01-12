@@ -10,13 +10,16 @@
             <div class="modal-body">
                 <form>
                     <div class="mb-3">
+                        <fieldset disabled>
+                            <label for="saveto-method-name" class="col-form-label">Method Name:</label>
+                            <input id="saveto-method-name" class="form-control">
+                        </fieldset>
                         <label for="saveto-blueprint-name" class="col-form-label">Select your Blueprint:</label>
-                        <input list="savetoBlueprints" class="form-control" id="saveto-blueprint-name" name="blueprint-list" size="50">
-                        <datalist id="savetoBlueprints">
+                        <select name="blueprint-list" id="saveto-blueprint-name" class="selectpicker form-control" data-live-search="true" title="Select a blueprint">
                             {{range $_, $bp := .Blueprints}}
-                            <option value='{{ $bp }}'>
-                                {{end}}
-                        </datalist>
+                            <option value='{{ $bp }}'>{{ $bp }}</option>
+                            {{end}}
+                        </select>
                     </div>
                 </form>
             </div>
@@ -38,6 +41,10 @@
             <div class="modal-body">
                 <form>
                     <div class="mb-3">
+                        <fieldset disabled>
+                            <label for="copy-service-name" class="col-form-label">Proto Name:</label>
+                            <input id="copy-service-name" class="form-control">
+                        </fieldset>
                         <label for="copy-blueprint-name" class="col-form-label">BlueprintName:</label>
                         <select class="selectpicker form-control" id="copy-blueprint-name" name="blueprint-list" data-live-search="true" >
                         {{range $_, $bp := .Blueprints}}

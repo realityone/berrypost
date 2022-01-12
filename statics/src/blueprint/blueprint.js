@@ -34,6 +34,7 @@ let initMethod = function(methods){
 let newMethodModal = function(){
     const modelButton = document.getElementById("method-modal");
     modelButton.onclick = function() {
+        document.getElementById("new-blueprint-name").value = document.getElementById("serviceMenu").innerText;
         const myModal = new Modal(document.getElementById('newMethodModal'))
         myModal.show()
     }
@@ -86,6 +87,8 @@ let newBlueprintReq = function(){
 let deleteMethodModal = function(){
     const modelButton = document.getElementById("delete-method-modal");
     modelButton.onclick = function() {
+        document.getElementById("deleteMethodModal-blueprint").value = document.getElementById("serviceMenu").innerText;
+        document.getElementById("deleteMethodModal-method").value = document.getElementById("method-name").value;
         const myModal = new Modal(document.getElementById('deleteMethodModal'))
         myModal.show()
     }
@@ -113,6 +116,7 @@ let deleteMethodReq = function(){
 let deleteBlueprintModal = function(){
     const modelButton = document.getElementById("delete-blueprint-modal");
     modelButton.onclick = function() {
+        document.getElementById("deleteBlueprintModal-blueprint").value = document.getElementById("serviceMenu").innerText;
         const myModal = new Modal(document.getElementById('deleteBlueprintModal'))
         myModal.show()
     }
