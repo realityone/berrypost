@@ -34,14 +34,15 @@
 
     <div class="col-4">
         <div class="d-grid gap-2 d-md-flex justify-content-md-end p-1">
-            {{if eq .UserId ""}}
-            <a class="btn btn-outline-primary" href="/management/login" role="button">Login</a>
-            {{else}}
+            {{if ne .UserId ""}}
             <div class="dropdown">
                 <button class="btn btn-outline-primary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
                     {{.UserId}}
                 </button>
                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                    {{if eq .UserId "admin"}}
+                    <li><a class="dropdown-item" href="/admin/dashboard">dashboard</a></li>
+                    {{end}}
                     <li><a class="dropdown-item" id="sign-out" href="#">Sign out</a></li>
                 </ul>
             </div>

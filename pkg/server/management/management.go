@@ -388,6 +388,11 @@ func (m Management) allProtoFiles(ctx context.Context) []*ProtoFileMeta {
 }
 
 func (m Management) login(ctx *gin.Context) {
+	_, err := ctx.Cookie("userid")
+	if err == nil {
+		ctx.Redirect(http.StatusTemporaryRedirect, "/management/rediect-to-example")
+		return
+	}
 	ctx.HTML(http.StatusOK, "login.html", &LoginPage{
 		Meta: m.server.Meta(),
 	})
@@ -601,9 +606,11 @@ func (m Management) publicBlueprint(ctx *gin.Context) {
 }
 
 func (m Management) emptyDashboard(ctx *gin.Context) {
+	userid, _ := ctx.Cookie("userid")
 	ctx.HTML(http.StatusOK, "dashboard.html", &InvokePage{
 		Meta:       m.server.Meta(),
 		ProtoFiles: m.allProtoFiles(ctx),
+		UserId:     userid,
 	})
 }
 
@@ -664,9 +671,10 @@ func (m Management) Setup(s *server.Server) error {
 	b.POST("/reduce", m.deleteBlueprintMethod)
 	b.POST("/share", m.shareBlueprint)
 
-	s.GET("/dashboard", m.emptyDashboard)
-	s.GET("/dashboard/*service-identifier", m.dashboard)
-	s.GET("/setting", m.setting)
+	a := s.Group("/admin", m.Authorize())
+	a.GET("/dashboard", m.emptyDashboard)
+	a.GET("/dashboard/*service-identifier", m.dashboard)
+	a.GET("/setting", m.setting)
 	return nil
 }
 
@@ -679,6 +687,27 @@ func (m Management) Authorize() gin.HandlerFunc {
 			userid := cUserid.Value
 			claims, err := m.JwtDecode(ctx, session)
 			if err == nil && claims["userid"].(string) == userid {
+				ctx.Next()
+				return
+			}
+		}
+		ctx.Abort()
+		ctx.HTML(http.StatusOK, "login.html", &LoginPage{
+			Meta: m.server.Meta(),
+		})
+		return
+	}
+}
+
+func (m Management) AdminAuthorize() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		cSession, err1 := ctx.Request.Cookie("session")
+		cUserid, err2 := ctx.Request.Cookie("userid")
+		if err1 == nil && err2 == nil {
+			session := cSession.Value
+			userid := cUserid.Value
+			claims, err := m.JwtDecode(ctx, session)
+			if err == nil && userid == "admin" && claims["userid"].(string) == userid {
 				ctx.Next()
 				return
 			}

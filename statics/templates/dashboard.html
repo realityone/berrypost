@@ -11,6 +11,7 @@
     <link rel="canonical" href="https://getbootstrap.com/docs/5.0/examples/dashboard/">
 
     <script src="/assets/statics/dist/vendor.bundle.js"></script>
+    <script src="/assets/statics/dist/common.bundle.js"></script>
     <script src="/assets/statics/dist/dashboard.bundle.js"></script>
     <script src="/assets/statics/dist/config.bundle.js"></script>
 
@@ -18,7 +19,7 @@
 <body>
 
 <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
-    <div class="float-md-start main-icon"></div>
+    <div class="float-md-start main-icon p-1"></div>
     <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 bg-dark" href="#">Berrypost-admin</a>
 <!--    <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">-->
 <!--        <span class="navbar-toggler-icon"></span>-->
@@ -35,14 +36,14 @@
         <ul id="serviceMenuContent" class="dropdown-menu scrollable-menu" role="menu" aria-labelledby="serviceMenu">
             <input type="text" class="form-control" placeholder="Search..." id="serviceMenuSearch">
             {{range $_, $pf := .ProtoFiles}}
-            <li><a class="dropdown-item" href="/dashboard/{{$pf.Meta.ImportPath}}">{{ $pf.Filename }}</a>
+            <li><a class="dropdown-item" href="/admin/dashboard/{{$pf.Meta.ImportPath}}">{{ $pf.Filename }}</a>
             </li>
             {{end}}
         </ul>
     </div>
     <div class="navbar-nav">
         <div class="nav-item text-nowrap">
-            <a class="nav-link px-3" href="#">Sign out</a>
+            <a class="nav-link px-3" id="sign-out">Sign out</a>
         </div>
     </div>
 </header>
@@ -58,36 +59,6 @@
                             Setting
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <span data-feather="file"></span>
-                            Orders
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <span data-feather="shopping-cart"></span>
-                            Products
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <span data-feather="users"></span>
-                            Customers
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <span data-feather="bar-chart-2"></span>
-                            Reports
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <span data-feather="layers"></span>
-                            Integrations
-                        </a>
-                    </li>
                 </ul>
 
                 <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
@@ -98,9 +69,17 @@
                 </h6>
                 <ul class="nav flex-column mb-2">
                     <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <span data-feather="file-text"></span>
-                            ...
+                        <a class="nav-link" aria-current="page" href="/">
+                            <i class="bi bi-house-door"></i>
+                            Home
+                        </a>
+                        <a class="nav-link" aria-current="page" href="/management/rediect-to-example">
+                            <i class="bi bi-files"></i>
+                            Proto
+                        </a>
+                        <a class="nav-link" aria-current="page" href="/management/blueprint">
+                            <i class="bi bi-journal-bookmark"></i>
+                            Blueprint
                         </a>
                     </li>
 
