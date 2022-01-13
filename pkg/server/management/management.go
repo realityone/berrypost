@@ -233,6 +233,9 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 		ProtoFiles:        m.allProtoFiles(ctx),
 		Blueprints:        m.allUserBlueprints(ctx, userid),
 	}
+	if userid != "" {
+		page.UserId = userid
+	}
 	preferTarget, ok := fileProfile.Common.Annotation[AppBerrypostManagementInvokePreferTarget]
 	if ok {
 		page.PreferTarget = preferTarget
@@ -249,20 +252,30 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 			FileName: serviceIdentifier,
 		}
 		ps.Methods = make([]*Method, 0, len(s.GetMethods()))
-		for _, m := range s.GetMethods() {
+		for _, mt := range s.GetMethods() {
 			pm := &Method{
-				Name:           m.GetName(),
-				GRPCMethodName: fmt.Sprintf("/%s/%s", s.GetFullyQualifiedName(), m.GetName()),
-				ServiceMethod:  fmt.Sprintf("%s.%s", s.GetName(), m.GetName()),
+				Name:           mt.GetName(),
+				GRPCMethodName: fmt.Sprintf("/%s/%s", s.GetFullyQualifiedName(), mt.GetName()),
+				ServiceMethod:  fmt.Sprintf("%s.%s", s.GetName(), mt.GetName()),
 				PreferTarget:   preferTarget,
 			}
 			descMarshaler := jsonpb.Marshaler{
 				EmitDefaults: true,
 				Indent:       "    ",
 			}
-			inputSchema, err := descMarshaler.MarshalToString(dynamic.NewMessage(m.GetInputType()))
+			inputSchema, err := descMarshaler.MarshalToString(dynamic.NewMessage(mt.GetInputType()))
 			if err != nil {
-				logrus.Warn("Failed to marshal method: %q input type as string: %+v", m.GetFullyQualifiedName(), err)
+				logrus.Warn("Failed to marshal method: %q input type as string: %+v", mt.GetFullyQualifiedName(), err)
+			}
+			if userid != "" {
+				hisKey := m.historyKey(userid, "", pm.GRPCMethodName)
+				his, ok, err := etcd.Dao.Get(hisKey)
+				if err != nil {
+					logrus.Warn(err)
+				}
+				if ok {
+					inputSchema = his
+				}
 			}
 			pm.InputSchema = inputSchema
 			ps.Methods = append(ps.Methods, pm)
@@ -287,6 +300,7 @@ func (m Management) makeBlueprintPage(ctx context.Context, blueprintIdentifier s
 		PreferTarget:        blueprintIdentifier,
 		ProtoFiles:          m.allProtoFiles(ctx),
 		Blueprints:          m.allUserBlueprints(ctx, userid),
+		UserId:              userid,
 	}
 	page.Services = make([]*Service, 0, len(meta.Methods))
 	for _, info := range meta.Methods {
@@ -310,95 +324,31 @@ func (m Management) makeBlueprintPage(ctx context.Context, blueprintIdentifier s
 				FileName: serviceIdentifier,
 			}
 			ps.Methods = make([]*Method, 0, len(s.GetMethods()))
-			for _, m := range s.GetMethods() {
-				if m.GetName() != info.MethodName {
+			for _, mt := range s.GetMethods() {
+				if mt.GetName() != info.MethodName {
 					continue
 				}
 				pm := &Method{
-					Name:           m.GetName(),
-					GRPCMethodName: fmt.Sprintf("/%s/%s", s.GetFullyQualifiedName(), m.GetName()),
-					ServiceMethod:  fmt.Sprintf("%s.%s", s.GetName(), m.GetName()),
+					Name:           mt.GetName(),
+					GRPCMethodName: fmt.Sprintf("/%s/%s", s.GetFullyQualifiedName(), mt.GetName()),
+					ServiceMethod:  fmt.Sprintf("%s.%s", s.GetName(), mt.GetName()),
 					PreferTarget:   preferTarget,
 				}
 				descMarshaler := jsonpb.Marshaler{
 					EmitDefaults: true,
 					Indent:       "    ",
 				}
-				inputSchema, err := descMarshaler.MarshalToString(dynamic.NewMessage(m.GetInputType()))
+				inputSchema, err := descMarshaler.MarshalToString(dynamic.NewMessage(mt.GetInputType()))
 				if err != nil {
-					logrus.Warn("Failed to marshal method: %q input type as string: %+v", m.GetFullyQualifiedName(), err)
+					logrus.Warn("Failed to marshal method: %q input type as string: %+v", mt.GetFullyQualifiedName(), err)
 				}
-				pm.InputSchema = inputSchema
-				ps.Methods = append(ps.Methods, pm)
-				break
-			}
-			page.Services = append(page.Services, ps)
-		}
-	}
-	return page, nil
-}
-
-func (m Management) makePublicBlueprintPage(ctx context.Context, token string) (*BlueprintPage, error) {
-	claims, err := m.JwtDecode(ctx, token)
-	if err != nil {
-		return nil, err
-	}
-	userid := claims["userid"].(string)
-	blueprintIdentifier := claims["blueprintName"].(string)
-	info, err := m.blueprintMethods(ctx, userid, blueprintIdentifier)
-	if err != nil {
-		return nil, err
-	}
-	meta := &BlueprintMeta{
-		blueprintIdentifier: blueprintIdentifier,
-		Methods:             info,
-	}
-	page := &BlueprintPage{
-		Meta:                m.server.Meta(),
-		BlueprintIdentifier: blueprintIdentifier,
-		PreferTarget:        blueprintIdentifier,
-		ProtoFiles:          m.allProtoFiles(ctx),
-		Blueprints:          []string{blueprintIdentifier},
-	}
-	page.Services = make([]*Service, 0, len(meta.Methods))
-	for _, info := range meta.Methods {
-		serviceIdentifier := info.Filename
-		fileProfile, ok := m.findProtoFileByServiceIdentifier(ctx, serviceIdentifier)
-
-		if !ok {
-			return nil, errors.Errorf("Failed to find package profile from service identifier: %q", serviceIdentifier)
-		}
-		preferTarget, ok := fileProfile.Common.Annotation[AppBerrypostManagementInvokePreferTarget]
-		if ok {
-			page.PreferTarget = preferTarget
-		}
-		defaultTarget, ok := fileProfile.Common.Annotation[AppBerrypostManagementInvokeDefaultTarget]
-		if ok {
-			page.DefaultTarget = defaultTarget
-		}
-		for _, s := range fileProfile.ProtoPackage.FileDescriptor.GetServices() {
-			ps := &Service{
-				Name:     s.GetName(),
-				FileName: serviceIdentifier,
-			}
-			ps.Methods = make([]*Method, 0, len(s.GetMethods()))
-			for _, m := range s.GetMethods() {
-				if m.GetName() != info.MethodName {
-					continue
-				}
-				pm := &Method{
-					Name:           m.GetName(),
-					GRPCMethodName: fmt.Sprintf("/%s/%s", s.GetFullyQualifiedName(), m.GetName()),
-					ServiceMethod:  fmt.Sprintf("%s.%s", s.GetName(), m.GetName()),
-					PreferTarget:   preferTarget,
-				}
-				descMarshaler := jsonpb.Marshaler{
-					EmitDefaults: true,
-					Indent:       "    ",
-				}
-				inputSchema, err := descMarshaler.MarshalToString(dynamic.NewMessage(m.GetInputType()))
+				hisKey := m.historyKey(userid, blueprintIdentifier, pm.GRPCMethodName)
+				his, ok, err := etcd.Dao.Get(hisKey)
 				if err != nil {
-					logrus.Warn("Failed to marshal method: %q input type as string: %+v", m.GetFullyQualifiedName(), err)
+					logrus.Warn(err)
+				}
+				if ok {
+					inputSchema = his
 				}
 				pm.InputSchema = inputSchema
 				ps.Methods = append(ps.Methods, pm)
@@ -526,6 +476,48 @@ func (m Management) signOut(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, nil)
 }
 
+func (m Management) saveHistory(ctx *gin.Context) {
+	userid, err := ctx.Cookie("userid")
+	if err != nil {
+		ctx.JSON(http.StatusOK, nil)
+		return
+	}
+	type RespBody struct {
+		Blueprint string `json:"blueprint"`
+		Service   string `json:"service"`
+		Method    string `json:"method"`
+		ReqBody   string `json:"reqBody"`
+	}
+	var reqInfo RespBody
+	if err := ctx.BindJSON(&reqInfo); err != nil {
+		logrus.Error(err)
+		return
+	}
+	reqInfo.Blueprint = m.trim(reqInfo.Blueprint)
+	reqInfo.Service = m.trim(reqInfo.Service)
+	reqInfo.Method = m.trim(reqInfo.Method)
+	if reqInfo.Blueprint == reqInfo.Service {
+		reqInfo.Blueprint = ""
+	}
+	key := m.historyKey(userid, reqInfo.Blueprint, reqInfo.Method)
+	if err := m.saveReq(key, reqInfo.ReqBody); err != nil {
+		logrus.Error("Failed to save req history %+v", err)
+		return
+	}
+	ctx.JSON(http.StatusOK, nil)
+}
+
+func (m Management) historyKey(userid string, blueprint string, method string) string {
+	return "/history/" + userid + "/" + blueprint + method
+}
+
+func (m Management) saveReq(key string, req string) error {
+	if err := etcd.Dao.Put(key, req); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (m Management) userVerify(ctx context.Context, userid string, password string) (bool, error) {
 	userKey := m.userKey(userid)
 	pw, ok, err := etcd.Dao.Get(userKey)
@@ -539,17 +531,13 @@ func (m Management) userVerify(ctx context.Context, userid string, password stri
 }
 
 func (m Management) invoke(ctx *gin.Context) {
-	userid, err := ctx.Cookie("userid")
+	userid, _ := ctx.Cookie("userid")
 	serviceIdentifier := ctx.Param("service-identifier")
 	serviceIdentifier = strings.TrimPrefix(serviceIdentifier, "/")
-
 	page, err := m.makeInvokePage(ctx, serviceIdentifier, userid)
 	if err != nil {
 		ctx.Error(err)
 		return
-	}
-	if err == nil {
-		page.UserId = userid
 	}
 	ctx.HTML(http.StatusOK, "invoke.html", page)
 }
@@ -577,7 +565,7 @@ func (m Management) emptyBlueprint(ctx *gin.Context) {
 }
 
 func (m Management) blueprint(ctx *gin.Context) {
-	userid, err := ctx.Cookie("userid")
+	userid, _ := ctx.Cookie("userid")
 	blueprintIdentifier := ctx.Param("blueprint-identifier")
 	blueprintIdentifier = strings.TrimPrefix(blueprintIdentifier, "/")
 	page, err := m.makeBlueprintPage(ctx, blueprintIdentifier, userid)
@@ -585,23 +573,29 @@ func (m Management) blueprint(ctx *gin.Context) {
 		ctx.Error(err)
 		return
 	}
-	page.UserId = userid
 	ctx.HTML(http.StatusOK, "blueprint.html", page)
 }
 
 func (m Management) publicBlueprint(ctx *gin.Context) {
-	userid, err := ctx.Cookie("userid")
 	req := new(struct {
 		Token string `form:"token"`
 	})
 	if err := ctx.Bind(req); err != nil {
 		return
 	}
-	page, err := m.makePublicBlueprintPage(ctx, req.Token)
+	claims, err := m.JwtDecode(ctx, req.Token)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
+	userid := claims["userid"].(string)
+	blueprintIdentifier := claims["blueprintName"].(string)
+	page, err := m.makeBlueprintPage(ctx, blueprintIdentifier, userid)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	userid, _ = ctx.Cookie("userid")
 	page.UserId = userid
 	ctx.HTML(http.StatusOK, "public.html", page)
 }
@@ -658,6 +652,7 @@ func (m Management) Setup(s *server.Server) error {
 	rAPI.POST("/signIn", m.signIn)
 	rAPI.POST("/signUp", m.signUp)
 	rAPI.POST("/signOut", m.signOut)
+	rAPI.POST("/saveHistory", m.saveHistory)
 
 	b := rAPI.Group("/blueprint", m.Authorize())
 	b.POST("/new", m.newBlueprint)

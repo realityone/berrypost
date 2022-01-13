@@ -5,7 +5,6 @@ import 'codemirror/lib/codemirror.css';
 import 'codemirror/mode/javascript/javascript.js';
 import 'codemirror/mode/shell/shell.js';
 import path from 'path-browserify';
-import {Modal} from "bootstrap";
 
 var setupCodeMirror = function() {
     window.requestBodyEditor = CodeMirror.fromTextArea(requestBody, {
@@ -100,6 +99,8 @@ var setupClickSend = function() {
         if (methodNameInput.value === "") {
             return;
         }
+        saveHistory()
+
         const targetInput = document.getElementById("target-addr");
         const metadataTable = document.getElementById("metadata-table");
 
@@ -244,6 +245,23 @@ let signOutReq = function(){
             document.location.replace("/management/login");
         })
     }
+}
+
+let saveHistory = function(){
+    if (document.location.pathname === "/management/public") {
+        return
+    }
+    const methodNameInput = document.getElementById("method-name");
+    fetch("/management/api/saveHistory", {
+        method: "POST",
+        body: JSON.stringify({
+            'blueprint' : document.getElementById("serviceMenu").innerText,
+            'service' : methodNameInput.dataset.serviceFileName,
+            'method' : document.getElementById("method-name").value,
+            'reqBody' : window.requestBodyEditor.getValue(),
+        }),
+    }).then((json) => {
+    })
 }
 
 window.addEventListener('load', setupCodeMirror);

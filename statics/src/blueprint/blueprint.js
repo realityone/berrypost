@@ -150,9 +150,10 @@ let shareBlueprint = function(){
         }).then((json) => {
             return json.json()
         }).then((data) => {
+            let protocol = window.location.protocol;
             let host = window.location.host;
             const url = document.getElementById("url");
-            url.value = host + data;
+            url.value = protocol + "//" + host + data;
             const reqButton = document.getElementById("copy-url");
             reqButton.innerText = "Copy"
             const myModal = new Modal(document.getElementById('shareBlueprintModal'));
