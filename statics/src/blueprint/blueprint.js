@@ -43,6 +43,11 @@ let newMethodModal = function(){
 let newMethodReq = function(){
     const reqButton = document.getElementById("add-method");
     reqButton.onclick = function() {
+        let form = document.getElementById("form-new-method")
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated')
+            return
+        }
         const blueprintName = document.getElementById("serviceMenu").innerText;
         const filename = document.getElementById("file-name").value;
         const method = $("#new-method-name").val();
@@ -71,6 +76,11 @@ let newBlueprintModal = function(){
 let newBlueprintReq = function(){
     const reqButton = document.getElementById("add-blueprint");
     reqButton.onclick = function() {
+        let form = document.getElementById("form-new-blueprint")
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated')
+            return
+        }
         const blueprintName = document.getElementById("blueprint-name").value;
         fetch("/management/api/blueprint/new", {
             method: "POST",

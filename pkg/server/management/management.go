@@ -415,6 +415,7 @@ func (m Management) signIn(ctx *gin.Context) {
 	}
 	ok, err := m.userSignIn(ctx, reqInfo.Userid, reqInfo.Password)
 	if err != nil {
+		logrus.Error(err)
 		ctx.JSON(http.StatusInternalServerError, nil)
 		return
 	}
@@ -469,6 +470,7 @@ func (m Management) signUp(ctx *gin.Context) {
 	}
 	ok, err := m.userSignUp(ctx, reqInfo.Userid, reqInfo.Password)
 	if err != nil {
+		logrus.Error(err)
 		ctx.JSON(http.StatusInternalServerError, nil)
 		return
 	}

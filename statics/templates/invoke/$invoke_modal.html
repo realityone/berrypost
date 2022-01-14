@@ -8,18 +8,21 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form>
+                <form id="form-saveto-blueprint" class="needs-validation" novalidate>
                     <div class="mb-3">
                         <fieldset disabled>
                             <label for="saveto-method-name" class="col-form-label">Method Name:</label>
                             <input id="saveto-method-name" class="form-control">
                         </fieldset>
                         <label for="saveto-blueprint-name" class="col-form-label">Select your Blueprint:</label>
-                        <select name="blueprint-list" id="saveto-blueprint-name" class="selectpicker form-control" data-live-search="true" title="Select a blueprint">
+                        <select name="blueprint-list" id="saveto-blueprint-name" class="selectpicker form-control" data-live-search="true" title="Select a blueprint" required>
                             {{range $_, $bp := .Blueprints}}
                             <option value='{{ $bp }}'>{{ $bp }}</option>
                             {{end}}
                         </select>
+                        <div class="invalid-feedback">
+                            BlueprintName is required.
+                        </div>
                     </div>
                 </form>
             </div>
@@ -39,18 +42,21 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form>
+                <form id="form-copy-blueprint" class="needs-validation" novalidate>
                     <div class="mb-3">
                         <fieldset disabled>
                             <label for="copy-service-name" class="col-form-label">Proto Name:</label>
                             <input id="copy-service-name" class="form-control">
                         </fieldset>
                         <label for="copy-blueprint-name" class="col-form-label">BlueprintName:</label>
-                        <select class="selectpicker form-control" id="copy-blueprint-name" name="blueprint-list" data-live-search="true" >
+                        <select class="selectpicker form-control" id="copy-blueprint-name" name="blueprint-list" data-live-search="true" title="Select a blueprint" required>
                         {{range $_, $bp := .Blueprints}}
                             <option value='{{ $bp }}'>{{ $bp }}</option>
                         {{end}}
                         </select>
+                        <div class="invalid-feedback">
+                            BlueprintName is required.
+                        </div>
                     </div>
                 </form>
             </div>

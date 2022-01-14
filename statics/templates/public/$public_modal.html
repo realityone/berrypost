@@ -8,10 +8,13 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form>
+                <form id="form-copy-blueprint" class="needs-validation" novalidate>
                     <div class="mb-3">
                         <label for="copy-blueprint-name" class="col-form-label">BlueprintName:</label>
-                        <input class="form-control" id="copy-blueprint-name" name="blueprint-list">
+                        <input class="form-control" id="copy-blueprint-name" name="blueprint-list" required>
+                        <div class="invalid-feedback">
+                            BlueprintName is required.
+                        </div>
                     </div>
                 </form>
             </div>

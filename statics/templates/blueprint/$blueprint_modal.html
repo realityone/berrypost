@@ -8,10 +8,13 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form>
+                <form id="form-new-blueprint" class="needs-validation" novalidate>
                     <div class="mb-3">
                         <label for="blueprint-name" class="col-form-label">BlueprintName:</label>
-                        <input type="text" class="form-control" id="blueprint-name">
+                        <input type="text" class="form-control" id="blueprint-name" required>
+                        <div class="invalid-feedback">
+                            BlueprintName is required.
+                        </div>
                     </div>
                 </form>
             </div>
@@ -31,25 +34,34 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <fieldset disabled>
-                        <label for="new-blueprint-name" class="col-form-label">Blueprint Name:</label>
-                        <input id="new-blueprint-name" class="form-control">
-                    </fieldset>
-                    <label for="file-name" class="col-form-label">FileName:</label>
-                    <br>
-                    <select name="file-name" id="file-name" class="selectpicker form-control" data-live-search="true" title="Select a file">
-                    {{range $_, $pf := .ProtoFiles}}
-                    <option value="{{$pf.Meta.ImportPath}}">{{ $pf.Filename }}</option>
-                    {{end}}
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label for="new-method-name" class="col-form-label">MethodName:</label>
-                    <br>
-                    <select multiple name="new-method-name" id="new-method-name" class="selectpicker form-control" data-live-search="true" title="Select methods" data-hide-disabled="true" data-actions-box="true" data-virtual-scroll="false">
-                    </select>
-                </div>
+                <form id="form-new-method" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <fieldset disabled>
+                            <label for="new-blueprint-name" class="col-form-label">Blueprint Name:</label>
+                            <input id="new-blueprint-name" class="form-control">
+                        </fieldset>
+                        <label for="file-name" class="col-form-label">FileName:</label>
+                        <br>
+                        <select name="file-name" id="file-name" class="selectpicker form-control" data-live-search="true" title="Select a file" required>
+                        {{range $_, $pf := .ProtoFiles}}
+                        <option value="{{$pf.Meta.ImportPath}}">{{ $pf.Filename }}</option>
+                        {{end}}
+                        </select>
+                        <div class="invalid-feedback">
+                            FileName is required.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new-method-name" class="col-form-label">MethodName:</label>
+                        <br>
+                        <select multiple name="new-method-name" id="new-method-name" class="selectpicker form-control" data-live-search="true"
+                                title="Select methods" data-hide-disabled="true" data-actions-box="true" data-virtual-scroll="false" required>
+                        </select>
+                        <div class="invalid-feedback">
+                            MethodName is required.
+                        </div>
+                    </div>
+                </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

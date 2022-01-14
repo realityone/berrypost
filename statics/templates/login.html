@@ -14,7 +14,7 @@
   <body class="text-center">
     
 <main class="form-signin">
-  <form>
+  <form id="form-signin" class="needs-validation" novalidate>
     <div class="mb-4 d-flex align-items-center">
       <div class="m-auto" id="main-image" onclick="window.location.href='/'">
       </div>
@@ -22,16 +22,22 @@
     <h1 class="h3 mb-3 fw-normal">Please sign in</h1>
 
     <div class="form-floating">
-      <input type="text" class="form-control" id="userid" placeholder="Userid">
+      <input type="text" class="form-control" id="userid" placeholder="Userid" required>
       <label for="userid">Userid</label>
+      <div class="invalid-feedback">
+        Userid is required.
+      </div>
     </div>
     <div class="form-floating">
-      <input type="password" class="form-control" id="password" placeholder="Password">
+      <input type="password" class="form-control" id="password" placeholder="Password" required>
       <label for="password">Password</label>
+      <div class="invalid-feedback">
+        Password is required.
+      </div>
     </div>
 
-    <button class="w-100 btn btn-lg btn-primary p-1" type="button" id="sign-in">Sign in</button>
-    <a class="w-100 p-1" href="/management/register">Create an account</a>
+    <button class="w-100 btn btn-lg btn-primary p-2" type="button" id="sign-in">Sign in</button>
+    <a class="w-100 p-2" href="/management/register">Create an account</a>
     <p class="mt-5 mb-3 text-muted">&copy;2021–2022</p>
   </form>
 </main>

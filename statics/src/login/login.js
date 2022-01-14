@@ -4,6 +4,11 @@ import '../vendor.js';
 let signInReq = function(){
     const reqButton = document.getElementById("sign-in");
     reqButton.onclick = function() {
+        let form = document.getElementById("form-signin")
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated')
+            return
+        }
         const last = document.referrer
         const userid = document.getElementById("userid").value;
         const password = document.getElementById("password").value;
@@ -30,6 +35,11 @@ let signInReq = function(){
 let signUpReq = function(){
     const reqButton = document.getElementById("sign-up");
     reqButton.onclick = function() {
+        let form = document.getElementById("form-signup")
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated')
+            return
+        }
         const userid = document.getElementById("userid").value;
         const password = document.getElementById("password").value;
         fetch("/management/api/signUp", {

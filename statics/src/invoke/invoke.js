@@ -13,6 +13,11 @@ let copyBlueprintModal = function(){
 let copyBlueprintReq = function(){
     const reqButton = document.getElementById("copy-blueprint");
     reqButton.onclick = function() {
+        let form = document.getElementById("form-copy-blueprint")
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated')
+            return
+        }
         const blueprintName = document.getElementById("copy-blueprint-name").value;
         const FileName = document.getElementById("serviceMenu").innerText;
         fetch("/management/api/blueprint/copyFromFile", {
@@ -40,6 +45,11 @@ let savetoBlueprintModal = function(){
 let savetoBlueprintReq = function(){
     const reqButton = document.getElementById("saveto-blueprint");
     reqButton.onclick = function() {
+        let form = document.getElementById("form-saveto-blueprint")
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated')
+            return
+        }
         const blueprintName = document.getElementById("saveto-blueprint-name").value;
         const filename = document.getElementById("serviceMenu").innerText;
         const methodNameInput = document.getElementById("method-name").value;

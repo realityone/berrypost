@@ -14,6 +14,11 @@ let copyBlueprintReq = function(){
     newName.value = document.getElementById("from-blueprint-name").innerText
     const reqButton = document.getElementById("copy-blueprint");
     reqButton.onclick = function() {
+        let form = document.getElementById("form-copy-blueprint")
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated')
+            return
+        }
         fetch("/management/api/blueprint/copy", {
             method: "POST",
             body: JSON.stringify({
