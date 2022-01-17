@@ -81,43 +81,6 @@ func (m Management) listServiceAlias(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, alias)
 }
 
-func (m Management) addressUpdate(ctx *gin.Context) {
-	type KDRespBody struct {
-		TargetAddr string `json:"targetAddrInput"`
-		ProtoName  string `json:"serviceInput"`
-	}
-	var reqInfo KDRespBody
-	if err := ctx.BindJSON(&reqInfo); err != nil {
-		ctx.Error(err)
-		return
-	}
-	reqInfo.ProtoName = m.trim(reqInfo.ProtoName)
-	reqInfo.TargetAddr = m.trim(reqInfo.TargetAddr)
-	err := etcd.Dao.Put(reqInfo.ProtoName, reqInfo.TargetAddr)
-	if err != nil {
-		ctx.Error(err)
-		ctx.JSON(http.StatusInternalServerError, nil)
-		return
-	}
-	ctx.JSON(http.StatusOK, nil)
-}
-
-func (m Management) getMethods(ctx *gin.Context) {
-	type RespBody struct {
-		FileName string `json:"fileName"`
-	}
-	var reqInfo RespBody
-	if err := ctx.BindJSON(&reqInfo); err != nil {
-		ctx.Error(err)
-		return
-	}
-	methods, err := m.getMethodsByService(ctx, reqInfo.FileName)
-	if err != nil {
-		ctx.Error(err)
-	}
-	ctx.JSON(http.StatusOK, methods)
-}
-
 // find proto file by service identifier in this order:
 // - proto file identifier
 // - proto file name
@@ -245,6 +208,12 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 		page.DefaultTarget = defaultTarget
 	}
 
+	historyPrefix := m.historyPrefix(userid, "")
+	history, err := etcd.Dao.GetWithPrefix(historyPrefix)
+	if err != nil {
+		logrus.Warn("Failed to load history: %+v", err)
+	}
+
 	page.Services = make([]*Service, 0, len(fileProfile.ProtoPackage.FileDescriptor.GetServices()))
 	for _, s := range fileProfile.ProtoPackage.FileDescriptor.GetServices() {
 		ps := &Service{
@@ -269,11 +238,7 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 			}
 			if userid != "" {
 				hisKey := m.historyKey(userid, "", pm.GRPCMethodName)
-				his, ok, err := etcd.Dao.Get(hisKey)
-				if err != nil {
-					logrus.Warn(err)
-				}
-				if ok {
+				if his, ok := history[hisKey]; ok {
 					inputSchema = his
 				}
 			}
@@ -283,6 +248,58 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 		page.Services = append(page.Services, ps)
 	}
 	return page, nil
+}
+
+func (m Management) addressUpdate(ctx *gin.Context) {
+	type ReqBody struct {
+		TargetAddr string `json:"targetAddrInput"`
+		ProtoName  string `json:"serviceInput"`
+	}
+	var reqInfo ReqBody
+	if err := ctx.BindJSON(&reqInfo); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	reqInfo.ProtoName = m.trim(reqInfo.ProtoName)
+	reqInfo.TargetAddr = m.trim(reqInfo.TargetAddr)
+	err := etcd.Dao.Put(reqInfo.ProtoName, reqInfo.TargetAddr)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, nil)
+}
+
+func (m Management) getServiceMethods(ctx *gin.Context) {
+	type RespBody struct {
+		FileName string `json:"fileName"`
+	}
+	var reqInfo RespBody
+	if err := ctx.BindJSON(&reqInfo); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	methods, err := m.getMethodsByService(ctx, reqInfo.FileName)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+	ctx.JSON(http.StatusOK, methods)
+}
+
+func (m Management) getBlueprint(key string) (string, error) {
+	history, err := etcd.Dao.GetIfExist(key)
+	if err != nil {
+		return "", err
+	}
+	return history, nil
+}
+
+func (m Management) getHistory(key string) (string, error) {
+	history, err := etcd.Dao.GetIfExist(key)
+	if err != nil {
+		return "", err
+	}
+	return history, nil
 }
 
 func (m Management) makeBlueprintPage(ctx context.Context, blueprintIdentifier string, userid string) (*BlueprintPage, error) {
@@ -303,6 +320,13 @@ func (m Management) makeBlueprintPage(ctx context.Context, blueprintIdentifier s
 		UserId:              userid,
 	}
 	page.Services = make([]*Service, 0, len(meta.Methods))
+
+	historyPrefix := m.historyPrefix(userid, blueprintIdentifier)
+	history, err := etcd.Dao.GetWithPrefix(historyPrefix)
+	if err != nil {
+		logrus.Warn("Failed to load history: %+v", err)
+	}
+
 	for _, info := range meta.Methods {
 		serviceIdentifier := info.Filename
 		fileProfile, ok := m.findProtoFileByServiceIdentifier(ctx, serviceIdentifier)
@@ -343,11 +367,7 @@ func (m Management) makeBlueprintPage(ctx context.Context, blueprintIdentifier s
 					logrus.Warn("Failed to marshal method: %q input type as string: %+v", mt.GetFullyQualifiedName(), err)
 				}
 				hisKey := m.historyKey(userid, blueprintIdentifier, pm.GRPCMethodName)
-				his, ok, err := etcd.Dao.Get(hisKey)
-				if err != nil {
-					logrus.Warn(err)
-				}
-				if ok {
+				if his, ok := history[hisKey]; ok {
 					inputSchema = his
 				}
 				pm.InputSchema = inputSchema
@@ -387,102 +407,6 @@ func (m Management) allProtoFiles(ctx context.Context) []*ProtoFileMeta {
 	return files
 }
 
-func (m Management) login(ctx *gin.Context) {
-	_, err := ctx.Cookie("userid")
-	if err == nil {
-		ctx.Redirect(http.StatusTemporaryRedirect, "/management/rediect-to-example")
-		return
-	}
-	ctx.HTML(http.StatusOK, "login.html", &LoginPage{
-		Meta: m.server.Meta(),
-	})
-}
-func (m Management) register(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "register.html", &LoginPage{
-		Meta: m.server.Meta(),
-	})
-}
-
-func (m Management) signIn(ctx *gin.Context) {
-	type RespBody struct {
-		Userid   string `json:"userid"`
-		Password string `json:"password"`
-	}
-	var reqInfo RespBody
-	if err := ctx.BindJSON(&reqInfo); err != nil {
-		ctx.Error(err)
-		return
-	}
-	ok, err := m.userSignIn(ctx, reqInfo.Userid, reqInfo.Password)
-	if err != nil {
-		logrus.Error(err)
-		ctx.JSON(http.StatusInternalServerError, nil)
-		return
-	}
-	ctx.JSON(http.StatusOK, ok)
-}
-
-func (m Management) userSignIn(ctx *gin.Context, userid string, password string) (bool, error) {
-	ok, err := m.userVerify(ctx, userid, password)
-	if err != nil {
-		return false, err
-	}
-	if !ok {
-		return false, nil
-	}
-	var hmacSampleSecret []byte
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userid": userid,
-	})
-	tokenString, err := token.SignedString(hmacSampleSecret)
-	if err != nil {
-		return false, err
-	}
-	ctx.SetCookie("session", tokenString, 3600, "", "", true, true)
-	ctx.SetCookie("userid", userid, 3600, "", "", true, true)
-	return true, nil
-}
-
-func (m Management) userSignUp(ctx *gin.Context, userid string, password string) (bool, error) {
-	userKey := m.userKey(userid)
-	_, ok, err := etcd.Dao.Get(userKey)
-	if err != nil {
-		return false, err
-	}
-	if ok {
-		return false, nil
-	}
-	if err = etcd.Dao.Put(userKey, password); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-func (m Management) signUp(ctx *gin.Context) {
-	type RespBody struct {
-		Userid   string `json:"userid"`
-		Password string `json:"password"`
-	}
-	var reqInfo RespBody
-	if err := ctx.BindJSON(&reqInfo); err != nil {
-		ctx.Error(err)
-		return
-	}
-	ok, err := m.userSignUp(ctx, reqInfo.Userid, reqInfo.Password)
-	if err != nil {
-		logrus.Error(err)
-		ctx.JSON(http.StatusInternalServerError, nil)
-		return
-	}
-	ctx.JSON(http.StatusOK, ok)
-}
-
-func (m Management) signOut(ctx *gin.Context) {
-	ctx.SetCookie("session", "", -1, "", "", true, true)
-	ctx.SetCookie("userid", "", -1, "", "", true, true)
-	ctx.JSON(http.StatusOK, nil)
-}
-
 func (m Management) saveHistory(ctx *gin.Context) {
 	userid, err := ctx.Cookie("userid")
 	if err != nil {
@@ -514,6 +438,10 @@ func (m Management) saveHistory(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, nil)
 }
 
+func (m Management) historyPrefix(userid string, blueprint string) string {
+	return "/history/" + userid + "/" + blueprint + "/"
+}
+
 func (m Management) historyKey(userid string, blueprint string, method string) string {
 	return "/history/" + userid + "/" + blueprint + method
 }
@@ -523,18 +451,6 @@ func (m Management) saveReq(key string, req string) error {
 		return err
 	}
 	return nil
-}
-
-func (m Management) userVerify(ctx context.Context, userid string, password string) (bool, error) {
-	userKey := m.userKey(userid)
-	pw, ok, err := etcd.Dao.Get(userKey)
-	if err != nil {
-		return false, err
-	}
-	if ok && pw != password {
-		return false, nil
-	}
-	return true, nil
 }
 
 func (m Management) invoke(ctx *gin.Context) {
@@ -565,7 +481,7 @@ func (m Management) emptyBlueprint(ctx *gin.Context) {
 	userid, _ := ctx.Cookie("userid")
 	page := &BlueprintPage{
 		Meta:       m.server.Meta(),
-		Blueprints: m.allUserBlueprintsMeta(ctx, userid),
+		Blueprints: m.allUserBlueprints(ctx, userid),
 	}
 	page.UserId = userid
 	ctx.HTML(http.StatusOK, "blueprint.html", page)
@@ -619,7 +535,6 @@ func (m Management) emptyDashboard(ctx *gin.Context) {
 func (m Management) dashboard(ctx *gin.Context) {
 	userid, err := ctx.Cookie("userid")
 	if err != nil {
-		//todo admin鉴权
 		ctx.Error(err)
 		return
 	}
@@ -656,24 +571,24 @@ func (m Management) Setup(s *server.Server) error {
 	rAPI.GET("/packages/:package_name", m.getPackage)
 	rAPI.GET("/service-alias", m.listServiceAlias)
 
-	rAPI.POST("/addressUpdate", m.addressUpdate)
-	rAPI.POST("/getMethods", m.getMethods)
-	rAPI.POST("/signIn", m.signIn)
-	rAPI.POST("/signUp", m.signUp)
-	rAPI.POST("/signOut", m.signOut)
-	rAPI.POST("/saveHistory", m.saveHistory)
+	rAPI.POST("/sign-in", m.signIn)
+	rAPI.POST("/sign-up", m.signUp)
+	rAPI.POST("/sign-out", m.signOut)
+	rAPI.POST("/address/update", m.addressUpdate)
+	rAPI.POST("/service/methods", m.getServiceMethods)
+	rAPI.POST("/history/save", m.saveHistory)
 
 	b := rAPI.Group("/blueprint", m.Authorize())
 	b.POST("/new", m.newBlueprint)
 	b.POST("/delete", m.delBlueprint)
-	b.POST("/copyFromFile", m.copyBlueprintFromFile)
+	b.POST("/file/copy", m.copyBlueprintFromFile)
 	b.POST("/copy", m.copyBlueprint)
-	b.POST("/append", m.savetoBlueprint)
-	b.POST("/appendList", m.appendBlueprint)
+	b.POST("/append", m.appendBlueprint)
+	b.POST("/append-list", m.listAppendBlueprint)
 	b.POST("/reduce", m.deleteBlueprintMethod)
 	b.POST("/share", m.shareBlueprint)
 
-	a := s.Group("/admin", m.Authorize())
+	a := s.Group("/admin", m.AdminAuthorize())
 	a.GET("/dashboard", m.emptyDashboard)
 	a.GET("/dashboard/*service-identifier", m.dashboard)
 	a.GET("/setting", m.setting)

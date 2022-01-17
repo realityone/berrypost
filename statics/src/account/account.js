@@ -1,4 +1,4 @@
-import './login.css';
+import './account.css';
 import '../vendor.js';
 
 let signInReq = function(){
@@ -12,7 +12,7 @@ let signInReq = function(){
         const last = document.referrer
         const userid = document.getElementById("userid").value;
         const password = document.getElementById("password").value;
-        fetch("/management/api/signIn", {
+        fetch("/management/api/sign-in", {
             method: "POST",
             body: JSON.stringify({
                 'userid' : userid,
@@ -42,7 +42,7 @@ let signUpReq = function(){
         }
         const userid = document.getElementById("userid").value;
         const password = document.getElementById("password").value;
-        fetch("/management/api/signUp", {
+        fetch("/management/api/sign-up", {
             method: "POST",
             body: JSON.stringify({
                 'userid' : userid,

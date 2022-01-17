@@ -4,7 +4,7 @@ import { Modal } from 'bootstrap';
 let initSel = function() {
     const fileSel = document.getElementById("file-name");
     fileSel.onchange = function() {
-        fetch("/management/api/getMethods", {
+        fetch("/management/api/service/methods", {
             method: "POST",
             body: JSON.stringify({
                 'fileName' : fileSel.value,
@@ -51,7 +51,7 @@ let newMethodReq = function(){
         const blueprintName = document.getElementById("serviceMenu").innerText;
         const filename = document.getElementById("file-name").value;
         const method = $("#new-method-name").val();
-        fetch("/management/api/blueprint/appendList", {
+        fetch("/management/api/blueprint/append-list", {
             method: "POST",
             body: JSON.stringify({
                 'blueprintName' : blueprintName,
@@ -88,8 +88,12 @@ let newBlueprintReq = function(){
                 'blueprintName' : blueprintName,
             }),
         }).then((response) => {
-            alert("new blueprint successfully!")
-            document.location.replace("/management/blueprint/"+blueprintName);
+            if (response.status === 200){
+                alert("new blueprint successfully!")
+                document.location.replace("/management/blueprint/"+blueprintName);
+            } else {
+                alert("fail to new blueprint")
+            }
         })
     }
 }

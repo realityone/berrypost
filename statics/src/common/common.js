@@ -238,7 +238,7 @@ var setupRequestEditor = function() {
 let signOutReq = function(){
     const reqButton = document.getElementById("sign-out");
     reqButton.onclick = function() {
-        fetch("/management/api/signOut", {
+        fetch("/management/api/sign-out", {
             method: "POST",
         }).then((json) => {
             alert("sign out successfully!")
@@ -252,7 +252,7 @@ let saveHistory = function(){
         return
     }
     const methodNameInput = document.getElementById("method-name");
-    fetch("/management/api/saveHistory", {
+    fetch("/management/api/history/save", {
         method: "POST",
         body: JSON.stringify({
             'blueprint' : document.getElementById("serviceMenu").innerText,

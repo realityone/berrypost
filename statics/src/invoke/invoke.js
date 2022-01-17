@@ -20,15 +20,19 @@ let copyBlueprintReq = function(){
         }
         const blueprintName = document.getElementById("copy-blueprint-name").value;
         const FileName = document.getElementById("serviceMenu").innerText;
-        fetch("/management/api/blueprint/copyFromFile", {
+        fetch("/management/api/blueprint/file/copy", {
             method: "POST",
             body: JSON.stringify({
                 'blueprintName' : blueprintName,
                 'FileName' : FileName,
             }),
         }).then((response) => {
-            alert("copy successfully!")
-            document.location.reload();
+            if (response.status === 200){
+                alert("copy successfully!")
+                document.location.reload();
+            } else {
+                alert("fail to copy")
+            }
         })
     }
 }
@@ -61,8 +65,12 @@ let savetoBlueprintReq = function(){
                 'methodName':methodNameInput,
             }),
         }).then((response) => {
-            alert("save successfully!")
-            document.location.reload();
+            if (response.status === 200){
+                alert("save successfully!")
+                document.location.reload();
+            } else {
+                alert("fail to save")
+            }
         })
     }
 }

@@ -24,8 +24,8 @@ module.exports = {
             import: './src/blueprint/blueprint.js',
             dependOn: 'vendor'
         },
-        login: {
-            import: './src/login/login.js',
+        account: {
+            import: './src/account/account.js',
             dependOn: 'vendor'
         },
         select: {

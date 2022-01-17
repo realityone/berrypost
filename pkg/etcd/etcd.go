@@ -51,23 +51,58 @@ func (etcd *etcd) Put(key string, value string) error {
 	return nil
 }
 
-func (etcd *etcd) Get(key string) (string, bool, error) {
+func (etcd *etcd) GetWithPrefix(key string) (map[string]string, error) {
+	rst := make(map[string]string)
 	if etcd.client == nil {
-		return "", false, errors.New("etcd not supported")
+		return nil, errors.New("etcd not supported")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	resp, err := etcd.client.Get(ctx, key, clientv3.WithPrefix())
+	cancel()
+	if err != nil {
+		return nil, err
+	}
+	for _, ev := range resp.Kvs {
+		k := string(ev.Key)
+		v := string(ev.Value)
+		rst[k] = v
+	}
+	return rst, nil
+}
+
+func (etcd *etcd) GetIfExist(key string) (string, error) {
+	if etcd.client == nil {
+		return "", errors.New("etcd not supported")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	resp, err := etcd.client.Get(ctx, key)
 	cancel()
 	if err != nil {
-		return "", false, err
+		return "", err
 	}
-	if len(resp.Kvs) != 1 {
-		return "", false, nil
+	if len(resp.Kvs) == 0 {
+		return "", errors.New("key does not exist")
 	}
-	return string(resp.Kvs[0].Value), true, nil
+	return string(resp.Kvs[0].Value), nil
 }
 
-func (etcd *etcd) GetWithPrefix(prefix string) ([]string, []string, error) {
+func (etcd *etcd) Exist(key string) (bool, error) {
+	if etcd.client == nil {
+		return false, errors.New("etcd not supported")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	resp, err := etcd.client.Get(ctx, key)
+	cancel()
+	if err != nil {
+		return false, err
+	}
+	if len(resp.Kvs) == 0 {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (etcd *etcd) GetKVWithPrefix(prefix string) ([]string, []string, error) {
 	var (
 		keys   []string
 		values []string
@@ -94,6 +129,25 @@ func (etcd *etcd) Delete(key string) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	_, err := etcd.client.Delete(ctx, key)
+	cancel()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (etcd *etcd) Update(key string, value string) error {
+	if etcd.client == nil {
+		return errors.New("etcd not supported")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	_, err := etcd.client.Delete(ctx, key)
+	cancel()
+	if err != nil {
+		return err
+	}
+	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+	_, err = etcd.client.Put(ctx, key, value)
 	cancel()
 	if err != nil {
 		return err
