@@ -117,6 +117,20 @@ func (m Management) CopyBlueprint(ctx context.Context, userid string, req *CopyB
 		log.Error("%+v", err)
 		return err
 	}
+	historyPrefix := m.historyPrefix(fromUserid, blueprintName)
+	history, err := etcd.Dao.GetWithPrefix(historyPrefix)
+	if err != nil {
+		log.Error("%+v", err)
+		return err
+	}
+	for key, value := range history {
+		newKey := strings.Replace(key, fromUserid, userid, 1)
+		newKey = strings.Replace(newKey, blueprintName, req.NewName, 1)
+		if err := etcd.Dao.Put(newKey, value); err != nil {
+			log.Error("%+v", err)
+			return err
+		}
+	}
 	return nil
 }
 

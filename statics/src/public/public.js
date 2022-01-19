@@ -25,14 +25,12 @@ let copyBlueprintReq = function(){
                 'newName' : newName.value,
                 'token' : getQueryVariable("token"),
             }),
-        }).then((json) => {
-            return json.json()
-        }).then((data) => {
-            if (data === true) {
+        }).then((response) => {
+            if (response.status === 200){
                 alert("copy successfully!")
                 document.location.reload();
             } else {
-                alert("blueprint name already exists, please retry")
+                alert("copy failed, please retry")
             }
         })
     }
