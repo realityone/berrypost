@@ -253,6 +253,18 @@ func (m Management) DeleteBlueprintMethod(ctx *gin.Context, req *BlueprintMethod
 		log.Error("%+v", err)
 		return err
 	}
+	historyKey := m.historyKey(userid, blueprintName, methodName)
+	ok, err := etcd.Dao.Exist(historyKey)
+	if err != nil {
+		log.Error("%+v", err)
+		return err
+	}
+	if !ok {
+		return nil
+	}
+	if err = etcd.Dao.Delete(historyKey); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -316,7 +328,6 @@ func (m Management) ShareURL(ctx *gin.Context, userid string, blueprintName stri
 }
 
 func (m Management) delBlueprint(ctx *gin.Context) {
-	userid, _ := ctx.Cookie("userid")
 	type BlueprintReq struct {
 		BlueprintName string `json:"blueprintName"`
 	}
@@ -325,12 +336,25 @@ func (m Management) delBlueprint(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	reqInfo.BlueprintName = m.trim(reqInfo.BlueprintName)
-	key := m.fullKey(userid, reqInfo.BlueprintName)
-	if err := etcd.Dao.Delete(key); err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
+
+	if err := m.DeleteBlueprint(ctx, reqInfo.BlueprintName); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 	ctx.JSON(http.StatusOK, nil)
+}
+
+func (m Management) DeleteBlueprint(ctx *gin.Context, blueprintName string) error {
+	userid, _ := ctx.Cookie("userid")
+	blueprintName = m.trim(blueprintName)
+	key := m.fullKey(userid, blueprintName)
+	if err := etcd.Dao.Delete(key); err != nil {
+		return err
+	}
+	history := m.historyPrefix(userid, blueprintName)
+	if err := etcd.Dao.DeleteWithPrefix(history); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (m Management) allUserBlueprints(ctx context.Context, userid string) []string {

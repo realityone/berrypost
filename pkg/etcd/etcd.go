@@ -136,6 +136,19 @@ func (etcd *etcd) Delete(key string) error {
 	return nil
 }
 
+func (etcd *etcd) DeleteWithPrefix(key string) error {
+	if etcd.client == nil {
+		return errors.New("etcd not supported")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	_, err := etcd.client.Delete(ctx, key, clientv3.WithPrefix())
+	cancel()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (etcd *etcd) Update(key string, value string) error {
 	if etcd.client == nil {
 		return errors.New("etcd not supported")
