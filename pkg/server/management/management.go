@@ -624,15 +624,13 @@ func (m Management) AdminAuthorize() gin.HandlerFunc {
 			session := cSession.Value
 			userid := cUserid.Value
 			claims, err := m.JwtDecode(ctx, session)
-			if err == nil && userid == "admin" && claims["userid"].(string) == userid {
+			if err == nil && claims["admin"].(bool) == true && claims["userid"].(string) == userid {
 				ctx.Next()
 				return
 			}
 		}
 		ctx.Abort()
-		ctx.HTML(http.StatusOK, "login.html", &LoginPage{
-			Meta: m.server.Meta(),
-		})
+		ctx.JSON(http.StatusOK, gin.H{"msg": "NO AUTHORITY :("})
 		return
 	}
 }
@@ -666,4 +664,9 @@ func (m Management) Meta() map[string]string {
 func (m Management) userKey(userid string) string {
 	//todo: 键设计
 	return "/users/" + userid
+}
+
+func (m Management) adminKey(userid string) string {
+	//todo: 键设计
+	return "/auth/admin/" + userid
 }

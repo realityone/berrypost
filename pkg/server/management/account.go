@@ -85,8 +85,13 @@ func (m Management) userSignIn(ctx *gin.Context, userid string, password string)
 		return false, nil
 	}
 	var hmacSampleSecret []byte
+	ok, err = m.isAdmin(ctx, userid)
+	if err != nil {
+		return false, err
+	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userid": userid,
+		"admin":  ok,
 	})
 	tokenString, err := token.SignedString(hmacSampleSecret)
 	if err != nil {
@@ -114,6 +119,15 @@ func (m Management) userVerify(ctx context.Context, userid string, password stri
 		return false, nil
 	}
 	return true, nil
+}
+
+func (m Management) isAdmin(ctx context.Context, userid string) (bool, error) {
+	userKey := m.adminKey(userid)
+	ok, err := etcd.Dao.Exist(userKey)
+	if err != nil {
+		return false, err
+	}
+	return ok, nil
 }
 
 func (m Management) userSignUp(ctx *gin.Context, userid string, password string) (bool, error) {
