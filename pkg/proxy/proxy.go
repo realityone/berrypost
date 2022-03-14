@@ -82,7 +82,7 @@ func (ps *ProxyServer) ServeHTTP(ctx *gin.Context) {
 	invokeCtx.serviceMethod = fmt.Sprintf("/%s/%s", service, method)
 	logrus.Debugf("Received gRPC call from http: %q", invokeCtx.serviceMethod)
 
-	reply, err := ps.Invoke(invokeCtx)
+	reply, replyHeader, err := ps.Invoke(invokeCtx)
 	if err != nil {
 		logrus.Errorf("Failed to invoke backend on method: %q: %+v", invokeCtx.serviceMethod, err)
 		ctx.AbortWithError(http.StatusBadRequest, err)
@@ -94,6 +94,10 @@ func (ps *ProxyServer) ServeHTTP(ctx *gin.Context) {
 			AnyResolver: AsContextedAnyResolver(ctx, ps.protoStore),
 		},
 		Indent: "    ",
+	}
+	header := ctx.Writer.Header()
+	for k, v := range replyHeader {
+		header[k] = v
 	}
 	if err := marshaler.Marshal(ctx.Writer, reply); err != nil {
 		logrus.Errorf("Failed to marshal reply on method: %q: %+v", invokeCtx.serviceMethod, err)
@@ -149,27 +153,27 @@ func extractIncommingGRPCMetadata(header http.Header) (metadata.MD, error) {
 	return out, nil
 }
 
-func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
+func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, metadata.MD, error) {
 	service, method, err := splitServiceMethod(ctx.serviceMethod)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	cli, err := ps.client(ctx, service)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer cli.Close()
 
 	toForward, err := extractIncommingGRPCMetadata(ctx.req.Header)
 	if err != nil {
-		return nil, errors.Wrap(err, "extract metadata")
+		return nil, nil, errors.Wrap(err, "extract metadata")
 	}
 	invokeCtx := metadata.NewOutgoingContext(ctx, toForward)
 
 	req, reply, err := ps.protoStore.GetMethodMessage(invokeCtx, service, method)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	logrus.DebugFn(func() []interface{} {
 		return []interface{}{
@@ -187,14 +191,14 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, error) {
 		},
 	}
 	if err := unmarshaler.Unmarshal(ctx.req.Body, req); err != nil {
-		return nil, errors.Errorf("Failed to unmarshal json to request message: %+v", err)
+		return nil, nil, errors.Errorf("Failed to unmarshal json to request message: %+v", err)
 	}
 
 	replyMD := metadata.MD{}
 	if err := cli.cc.Invoke(invokeCtx, ctx.serviceMethod, req, reply, grpc.Header(&replyMD)); err != nil {
-		return nil, err
+		return nil, replyMD, err
 	}
-	return reply, nil
+	return reply, replyMD, nil
 }
 
 func (p *ProxyServer) Name() string {
