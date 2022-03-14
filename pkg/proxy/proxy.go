@@ -71,6 +71,12 @@ func (ps *ProxyServer) client(ctx *Context, service string) (*clientSet, error) 
 	return newCliSet, nil
 }
 
+func writeHeaderAlways(md metadata.MD, dst http.Header) {
+	for k, v := range md {
+		dst[k] = v
+	}
+}
+
 func (ps *ProxyServer) ServeHTTP(ctx *gin.Context) {
 	invokeCtx := &Context{
 		Context: ctx,
@@ -83,6 +89,8 @@ func (ps *ProxyServer) ServeHTTP(ctx *gin.Context) {
 	logrus.Debugf("Received gRPC call from http: %q", invokeCtx.serviceMethod)
 
 	reply, replyHeader, err := ps.Invoke(invokeCtx)
+	fmt.Println("AAAAA", replyHeader)
+	defer writeHeaderAlways(replyHeader, ctx.Writer.Header())
 	if err != nil {
 		logrus.Errorf("Failed to invoke backend on method: %q: %+v", invokeCtx.serviceMethod, err)
 		ctx.AbortWithError(http.StatusBadRequest, err)
@@ -94,10 +102,6 @@ func (ps *ProxyServer) ServeHTTP(ctx *gin.Context) {
 			AnyResolver: AsContextedAnyResolver(ctx, ps.protoStore),
 		},
 		Indent: "    ",
-	}
-	header := ctx.Writer.Header()
-	for k, v := range replyHeader {
-		header[k] = v
 	}
 	if err := marshaler.Marshal(ctx.Writer, reply); err != nil {
 		logrus.Errorf("Failed to marshal reply on method: %q: %+v", invokeCtx.serviceMethod, err)
