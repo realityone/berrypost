@@ -18,6 +18,11 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+var (
+	_headerPrefix  = http.CanonicalHeaderKey("X-Berrypost-Md-")
+	_trailerPrefix = http.CanonicalHeaderKey("X-Berrypost-Md-Trailer-")
+)
+
 type clientSet struct {
 	cc *grpc.ClientConn
 }
@@ -38,6 +43,11 @@ type clientID struct {
 
 func (cs *clientSet) Close() error {
 	return cs.cc.Close()
+}
+
+type metadataSet struct {
+	header  metadata.MD
+	trailer metadata.MD
 }
 
 func (ps *ProxyServer) client(ctx *Context, service string) (*clientSet, error) {
@@ -71,9 +81,26 @@ func (ps *ProxyServer) client(ctx *Context, service string) (*clientSet, error) 
 	return newCliSet, nil
 }
 
-func writeHeaderAlways(md metadata.MD, dst http.Header) {
-	for k, v := range md {
-		dst[k] = v
+func asBerrypostHeader(in string) string {
+	if strings.HasPrefix(in, _headerPrefix) {
+		return in
+	}
+	return http.CanonicalHeaderKey(fmt.Sprintf("%s%s", _headerPrefix, in))
+}
+
+func asBerrypostTrailer(in string) string {
+	if strings.HasPrefix(in, _trailerPrefix) {
+		return in
+	}
+	return http.CanonicalHeaderKey(fmt.Sprintf("%s%s", _trailerPrefix, in))
+}
+
+func writeMetadataAlways(mdSet *metadataSet, dst http.Header) {
+	for k, v := range mdSet.header {
+		dst[asBerrypostHeader(k)] = v
+	}
+	for k, v := range mdSet.trailer {
+		dst[asBerrypostTrailer(k)] = v
 	}
 }
 
@@ -88,9 +115,10 @@ func (ps *ProxyServer) ServeHTTP(ctx *gin.Context) {
 	invokeCtx.serviceMethod = fmt.Sprintf("/%s/%s", service, method)
 	logrus.Debugf("Received gRPC call from http: %q", invokeCtx.serviceMethod)
 
-	reply, replyHeader, err := ps.Invoke(invokeCtx)
-	fmt.Println("AAAAA", replyHeader)
-	defer writeHeaderAlways(replyHeader, ctx.Writer.Header())
+	reply, mdSet, err := ps.Invoke(invokeCtx)
+	if mdSet != nil {
+		writeMetadataAlways(mdSet, ctx.Writer.Header())
+	}
 	if err != nil {
 		logrus.Errorf("Failed to invoke backend on method: %q: %+v", invokeCtx.serviceMethod, err)
 		ctx.AbortWithError(http.StatusBadRequest, err)
@@ -129,13 +157,12 @@ func decodeMetadataHeader(k, v string) (string, error) {
 
 func extractIncommingGRPCMetadata(header http.Header) (metadata.MD, error) {
 	const base64Prefix = "base64://"
-	prefix := http.CanonicalHeaderKey("X-Berrypost-Md-")
 	out := metadata.MD{}
 	for k, vs := range header {
-		if !strings.HasPrefix(k, prefix) {
+		if !strings.HasPrefix(k, _headerPrefix) {
 			continue
 		}
-		name := strings.TrimPrefix(k, prefix)
+		name := strings.TrimPrefix(k, _headerPrefix)
 		if name == "" {
 			continue
 		}
@@ -157,7 +184,7 @@ func extractIncommingGRPCMetadata(header http.Header) (metadata.MD, error) {
 	return out, nil
 }
 
-func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, metadata.MD, error) {
+func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, *metadataSet, error) {
 	service, method, err := splitServiceMethod(ctx.serviceMethod)
 	if err != nil {
 		return nil, nil, err
@@ -198,11 +225,14 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, metadata.MD, error) 
 		return nil, nil, errors.Errorf("Failed to unmarshal json to request message: %+v", err)
 	}
 
-	replyMD := metadata.MD{}
-	if err := cli.cc.Invoke(invokeCtx, ctx.serviceMethod, req, reply, grpc.Header(&replyMD)); err != nil {
-		return nil, replyMD, err
+	mdSet := &metadataSet{
+		header:  metadata.MD{},
+		trailer: metadata.MD{},
 	}
-	return reply, replyMD, nil
+	if err := cli.cc.Invoke(invokeCtx, ctx.serviceMethod, req, reply, grpc.Header(&mdSet.header), grpc.Trailer(&mdSet.trailer)); err != nil {
+		return nil, mdSet, err
+	}
+	return reply, mdSet, nil
 }
 
 func (p *ProxyServer) Name() string {
