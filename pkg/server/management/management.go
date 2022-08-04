@@ -331,7 +331,7 @@ func (m Management) emptyInvoke(ctx *gin.Context) {
 	})
 }
 
-func (m Management) prepareMetadata(ctx *gin.Context) {
+func (m Management) prepareBuiltinMetadata(ctx *gin.Context) {
 	meta := metadata.Metadata{
 		ProtoRevision: ctx.Query("protoRevision"),
 	}
@@ -341,12 +341,12 @@ func (m Management) prepareMetadata(ctx *gin.Context) {
 func (m Management) Setup(s *server.Server) error {
 	m.server = s
 
-	r := s.Group("/management", m.prepareMetadata)
+	r := s.Group("/management", m.prepareBuiltinMetadata)
 	r.GET("/rediect-to-example", m.redirectToFirstService)
 	r.GET("/invoke", m.emptyInvoke)
 	r.GET("/invoke/*service-identifier", m.invoke)
 
-	rAPI := s.Group("/management/api", m.prepareMetadata)
+	rAPI := s.Group("/management/api", m.prepareBuiltinMetadata)
 	rAPI.GET("/_intro", m.intro)
 	rAPI.GET("/packages", m.listPackages)
 	rAPI.GET("/packages/:package_name", m.getPackage)

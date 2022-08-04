@@ -186,7 +186,7 @@ func extractIncommingGRPCMetadata(header http.Header) (grpcmetadata.MD, error) {
 	return out, nil
 }
 
-func (ps *ProxyServer) prepareMetadata(ctx context.Context) context.Context {
+func (ps *ProxyServer) prepareBuiltinMetadata(ctx context.Context) context.Context {
 	parseFrom := func() (metadata.Metadata, bool) {
 		md, ok := grpcmetadata.FromOutgoingContext(ctx)
 		if !ok {
@@ -224,6 +224,7 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, *metadataSet, error)
 		return nil, nil, errors.Wrap(err, "extract metadata")
 	}
 	invokeCtx := grpcmetadata.NewOutgoingContext(ctx, toForward)
+	invokeCtx = ps.prepareBuiltinMetadata(invokeCtx)
 
 	req, reply, err := ps.protoStore.GetMethodMessage(invokeCtx, service, method)
 	if err != nil {
