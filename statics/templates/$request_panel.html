@@ -43,6 +43,14 @@
                             </tr>
                         </thead>
                         <tbody>
+                            {{range $_, $i := .DefaultMetadata}}
+                            <tr>
+                                <td><input type="checkbox" name="enable" checked disabled></td>
+                                <td><input type="text" value="{{ $i.Key }}" name="name" class="border-0 border-bottom" disabled></td>
+                                <td><input type="text" value="{{ $i.Value }}" name="value" class="border-0 border-bottom" disabled></td>
+                                <td><span class="delete-metadata" hidden><i class="bi bi-dash-circle"></i></span></td>
+                            </tr>
+                            {{end}}
                             <tr>
                                 <td><input type="checkbox" name="enable" hidden></td>
                                 <td><input type="text" placeholder="Add Header Name" name="name" class="border-0 border-bottom"></td>

@@ -223,6 +223,16 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 			return dst
 		},
 	}
+	meta, ok := metadata.FromContext(ctx)
+	if ok {
+		if meta.ProtoRevision != "" {
+			page.DefaultMetadata = append(page.DefaultMetadata, &MetadataItem{
+				Key:   metadata.ProtoRevisionGRPCMetadataKey,
+				Value: meta.ProtoRevision,
+			})
+		}
+	}
+
 	preferTarget, ok := fileProfile.Common.Annotation[AppBerrypostManagementInvokePreferTarget]
 	if ok {
 		page.PreferTarget = preferTarget

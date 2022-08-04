@@ -16,6 +16,11 @@ type Service struct {
 	Methods []*Method
 }
 
+type MetadataItem struct {
+	Key   string
+	Value string
+}
+
 type InvokePage struct {
 	Meta                 server.ServerMeta
 	ServiceIdentifier    string
@@ -24,4 +29,5 @@ type InvokePage struct {
 	Services             []*Service
 	ProtoFiles           []*ProtoFileMeta
 	InvokePageURLBuilder func(*ProtoFileMeta) string
+	DefaultMetadata      []*MetadataItem
 }

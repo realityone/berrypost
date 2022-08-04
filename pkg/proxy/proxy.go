@@ -194,7 +194,7 @@ func (ps *ProxyServer) prepareMetadata(ctx context.Context) context.Context {
 		}
 
 		meta := metadata.Metadata{}
-		if vs := md.Get("x-proto-revision"); len(vs) > 0 {
+		if vs := md.Get(metadata.ProtoRevisionGRPCMetadataKey); len(vs) > 0 {
 			meta.ProtoRevision = vs[0]
 		}
 		return meta, true

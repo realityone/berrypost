@@ -12,3 +12,5 @@ func FromContext(ctx context.Context) (Metadata, bool) {
 	meta, ok := ctx.Value(ContextKey).(Metadata)
 	return meta, ok
 }
+
+const ProtoRevisionGRPCMetadataKey = "x-proto-revision"
