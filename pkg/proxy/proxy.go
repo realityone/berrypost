@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -10,12 +11,13 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+	"github.com/realityone/berrypost/pkg/metadata"
 	"github.com/realityone/berrypost/pkg/protohelper"
 	"github.com/realityone/berrypost/pkg/server"
 	"github.com/realityone/berrypost/pkg/server/contrib/errorhandler"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
+	grpcmetadata "google.golang.org/grpc/metadata"
 )
 
 var (
@@ -46,8 +48,8 @@ func (cs *clientSet) Close() error {
 }
 
 type metadataSet struct {
-	header  metadata.MD
-	trailer metadata.MD
+	header  grpcmetadata.MD
+	trailer grpcmetadata.MD
 }
 
 func (ps *ProxyServer) client(ctx *Context, service string) (*clientSet, error) {
@@ -58,7 +60,7 @@ func (ps *ProxyServer) client(ctx *Context, service string) (*clientSet, error) 
 	if err != nil {
 		return nil, errors.Wrap(err, "extract metadata")
 	}
-	dialCtx := metadata.NewOutgoingContext(ctx, toForward)
+	dialCtx := grpcmetadata.NewOutgoingContext(ctx, toForward)
 
 	logrus.Debugf("Resolving service %+v to dial gRPC connection", clientKey)
 	target, err := ps.resolver.ResolveOnce(dialCtx, &ResolveOnceRequest{
@@ -155,9 +157,9 @@ func decodeMetadataHeader(k, v string) (string, error) {
 	return v, nil
 }
 
-func extractIncommingGRPCMetadata(header http.Header) (metadata.MD, error) {
+func extractIncommingGRPCMetadata(header http.Header) (grpcmetadata.MD, error) {
 	const base64Prefix = "base64://"
-	out := metadata.MD{}
+	out := grpcmetadata.MD{}
 	for k, vs := range header {
 		if !strings.HasPrefix(k, _headerPrefix) {
 			continue
@@ -184,6 +186,27 @@ func extractIncommingGRPCMetadata(header http.Header) (metadata.MD, error) {
 	return out, nil
 }
 
+func (ps *ProxyServer) prepareMetadata(ctx context.Context) context.Context {
+	parseFrom := func() (metadata.Metadata, bool) {
+		md, ok := grpcmetadata.FromOutgoingContext(ctx)
+		if !ok {
+			return metadata.Metadata{}, false
+		}
+
+		meta := metadata.Metadata{}
+		if vs := md.Get("x-proto-revision"); len(vs) > 0 {
+			meta.ProtoRevision = vs[0]
+		}
+		return meta, true
+	}
+
+	meta, ok := parseFrom()
+	if !ok {
+		return ctx
+	}
+	return context.WithValue(ctx, metadata.ContextKey, meta)
+}
+
 func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, *metadataSet, error) {
 	service, method, err := splitServiceMethod(ctx.serviceMethod)
 	if err != nil {
@@ -200,7 +223,7 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, *metadataSet, error)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "extract metadata")
 	}
-	invokeCtx := metadata.NewOutgoingContext(ctx, toForward)
+	invokeCtx := grpcmetadata.NewOutgoingContext(ctx, toForward)
 
 	req, reply, err := ps.protoStore.GetMethodMessage(invokeCtx, service, method)
 	if err != nil {
@@ -226,8 +249,8 @@ func (ps *ProxyServer) Invoke(ctx *Context) (proto.Message, *metadataSet, error)
 	}
 
 	mdSet := &metadataSet{
-		header:  metadata.MD{},
-		trailer: metadata.MD{},
+		header:  grpcmetadata.MD{},
+		trailer: grpcmetadata.MD{},
 	}
 	if err := cli.cc.Invoke(invokeCtx, ctx.serviceMethod, req, reply, grpc.Header(&mdSet.header), grpc.Trailer(&mdSet.trailer)); err != nil {
 		return nil, mdSet, err

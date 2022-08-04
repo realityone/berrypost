@@ -17,10 +17,11 @@ type Service struct {
 }
 
 type InvokePage struct {
-	Meta              server.ServerMeta
-	ServiceIdentifier string
-	PackageName       string
-	PreferTarget      string
-	Services          []*Service
-	ProtoFiles        []*ProtoFileMeta
+	Meta                 server.ServerMeta
+	ServiceIdentifier    string
+	PackageName          string
+	PreferTarget         string
+	Services             []*Service
+	ProtoFiles           []*ProtoFileMeta
+	InvokePageURLBuilder func(*ProtoFileMeta) string
 }
