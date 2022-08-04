@@ -216,9 +216,13 @@ func (m Management) listKnownReferences(ctx context.Context) []*ReferenceItem {
 
 func initializeMessageField(in *dynamic.Message) {
 	for _, f := range in.GetKnownFields() {
-		if f.GetType() == descriptorpb.FieldDescriptorProto_TYPE_MESSAGE {
-			in.SetField(f, dynamic.NewMessage(f.GetMessageType()))
+		if f.GetType() != descriptorpb.FieldDescriptorProto_TYPE_MESSAGE {
+			continue
 		}
+		if f.IsRepeated() {
+			continue
+		}
+		in.SetField(f, dynamic.NewMessage(f.GetMessageType()))
 	}
 }
 
