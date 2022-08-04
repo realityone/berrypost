@@ -17,6 +17,10 @@ type ProtoManager interface {
 	GetProtoFile(context.Context, *GetProtoFileRequest) (*ProtoFileProfile, error)
 }
 
+type RevisionManager interface {
+	Resolve(context.Context, string) (ProtoManager, error)
+}
+
 type ProtoFileMeta struct {
 	Filename string    `json:"filename"`
 	Meta     ProtoMeta `json:"meta"`

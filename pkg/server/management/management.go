@@ -51,7 +51,7 @@ func (m Management) intro(ctx *gin.Context) {
 }
 
 func (m Management) listPackages(ctx *gin.Context) {
-	packages, err := m.protoManager.ListPackages(ctx)
+	packages, err := m.resolveProtoManager(ctx).ListPackages(ctx)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -60,7 +60,7 @@ func (m Management) listPackages(ctx *gin.Context) {
 }
 
 func (m Management) getPackage(ctx *gin.Context) {
-	packageProfile, err := m.protoManager.GetPackage(ctx, &GetPackageRequest{
+	packageProfile, err := m.resolveProtoManager(ctx).GetPackage(ctx, &GetPackageRequest{
 		PackageName: ctx.Param("package_name"),
 	})
 	if err != nil {
@@ -71,7 +71,7 @@ func (m Management) getPackage(ctx *gin.Context) {
 }
 
 func (m Management) listServiceAlias(ctx *gin.Context) {
-	alias, err := m.protoManager.ListServiceAlias(ctx)
+	alias, err := m.resolveProtoManager(ctx).ListServiceAlias(ctx)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -85,7 +85,7 @@ func (m Management) listServiceAlias(ctx *gin.Context) {
 // - proto package name
 // - service alias
 func (m Management) findProtoFileByServiceIdentifier(ctx context.Context, serviceIdentifier string) (*ProtoFileProfile, bool) {
-	files, err := m.protoManager.ListProtoFiles(ctx)
+	files, err := m.resolveProtoManager(ctx).ListProtoFiles(ctx)
 	if err != nil {
 		logrus.Error("Failed to list proto files: %+v", err)
 	}
@@ -109,7 +109,7 @@ func (m Management) findProtoFileByServiceIdentifier(ctx context.Context, servic
 	}
 
 	fromProtoPackageName := func() (string, bool, error) {
-		packages, err := m.protoManager.ListPackages(ctx)
+		packages, err := m.resolveProtoManager(ctx).ListPackages(ctx)
 		if err != nil {
 			return "", false, err
 		}
@@ -122,11 +122,11 @@ func (m Management) findProtoFileByServiceIdentifier(ctx context.Context, servic
 	}
 
 	fromServiceAlias := func() (string, bool, error) {
-		alias, err := m.protoManager.ListServiceAlias(ctx)
+		alias, err := m.resolveProtoManager(ctx).ListServiceAlias(ctx)
 		if err != nil {
 			return "", false, nil
 		}
-		packages, err := m.protoManager.ListPackages(ctx)
+		packages, err := m.resolveProtoManager(ctx).ListPackages(ctx)
 		if err != nil {
 			return "", false, err
 		}
@@ -163,7 +163,7 @@ func (m Management) findProtoFileByServiceIdentifier(ctx context.Context, servic
 			logrus.Error("Failed to find proto file desctrption with given service identifier: %q", serviceIdentifier)
 			continue
 		}
-		profile, err := m.protoManager.GetProtoFile(ctx, &GetProtoFileRequest{
+		profile, err := m.resolveProtoManager(ctx).GetProtoFile(ctx, &GetProtoFileRequest{
 			ImportPath: importPath,
 		})
 		if err != nil {
@@ -174,6 +174,24 @@ func (m Management) findProtoFileByServiceIdentifier(ctx context.Context, servic
 	}
 
 	return nil, false
+}
+
+func (m Management) resolveProtoManager(ctx context.Context) ProtoManager {
+	meta := FromContext(ctx)
+	if meta.ProtoRevision == "" {
+		return m.protoManager
+	}
+	rm, ok := m.protoManager.(RevisionManager)
+	if !ok {
+		logrus.Warnf("Proto manager %T does not support revision management", m.protoManager)
+		return m.protoManager
+	}
+	pm, err := rm.Resolve(ctx, meta.ProtoRevision)
+	if err != nil {
+		logrus.Warnf("Failed to resolve proto manager on revision: %s: %+v", meta.ProtoRevision, err)
+		return m.protoManager
+	}
+	return pm
 }
 
 func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string) (*InvokePage, error) {
@@ -223,7 +241,7 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 }
 
 func (m Management) firstServiceAlias(ctx context.Context) string {
-	serviceAlias, err := m.protoManager.ListServiceAlias(ctx)
+	serviceAlias, err := m.resolveProtoManager(ctx).ListServiceAlias(ctx)
 	if err != nil {
 		return ""
 	}
@@ -241,7 +259,7 @@ func (m Management) redirectToFirstService(ctx *gin.Context) {
 }
 
 func (m Management) allProtoFiles(ctx context.Context) []*ProtoFileMeta {
-	files, err := m.protoManager.ListProtoFiles(ctx)
+	files, err := m.resolveProtoManager(ctx).ListProtoFiles(ctx)
 	if err != nil {
 		logrus.Error("Failed to list proto files: %+v", err)
 		return nil
@@ -267,15 +285,32 @@ func (m Management) emptyInvoke(ctx *gin.Context) {
 	})
 }
 
+type Metadata struct {
+	ProtoRevision string
+}
+
+const MetadataKey = "management-meta"
+
+func (m Management) prepareMetadata(ctx *gin.Context) {
+	meta := Metadata{
+		ProtoRevision: ctx.Query("protoRevision"),
+	}
+	ctx.Set(MetadataKey, meta)
+}
+
+func FromContext(ctx context.Context) Metadata {
+	return ctx.Value(MetadataKey).(Metadata)
+}
+
 func (m Management) Setup(s *server.Server) error {
 	m.server = s
 
-	r := s.Group("/management")
+	r := s.Group("/management", m.prepareMetadata)
 	r.GET("/rediect-to-example", m.redirectToFirstService)
 	r.GET("/invoke", m.emptyInvoke)
 	r.GET("/invoke/*service-identifier", m.invoke)
 
-	rAPI := s.Group("/management/api")
+	rAPI := s.Group("/management/api", m.prepareMetadata)
 	rAPI.GET("/_intro", m.intro)
 	rAPI.GET("/packages", m.listPackages)
 	rAPI.GET("/packages/:package_name", m.getPackage)
