@@ -7,29 +7,11 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/metadata"
 )
 
 type RuntimeProtoStore interface {
 	GetMethodMessage(context.Context, string, string) (proto.Message, proto.Message, error)
 	GetMessage(context.Context, string) (proto.Message, error)
-}
-
-type Metadata struct {
-	ProtoRevision string
-}
-
-func FromContext(ctx context.Context) (Metadata, bool) {
-	md, ok := metadata.FromOutgoingContext(ctx)
-	if !ok {
-		return Metadata{}, false
-	}
-
-	meta := Metadata{}
-	if vs := md.Get("x-proto-revision"); len(vs) > 0 {
-		meta.ProtoRevision = vs[0]
-	}
-	return meta, true
 }
 
 type defaultRuntimeProtoStore struct{}

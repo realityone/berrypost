@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"path"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/pkg/errors"
+	"github.com/realityone/berrypost/pkg/metadata"
 	"github.com/realityone/berrypost/pkg/server"
 	"github.com/sirupsen/logrus"
 	"k8s.io/kube-openapi/pkg/util/sets"
@@ -160,7 +162,7 @@ func (m Management) findProtoFileByServiceIdentifier(ctx context.Context, servic
 			continue
 		}
 		if !ok {
-			logrus.Error("Failed to find proto file desctrption with given service identifier: %q", serviceIdentifier)
+			logrus.Errorf("Failed to find proto file desctrption with given service identifier: %q", serviceIdentifier)
 			continue
 		}
 		profile, err := m.resolveProtoManager(ctx).GetProtoFile(ctx, &GetProtoFileRequest{
@@ -177,7 +179,10 @@ func (m Management) findProtoFileByServiceIdentifier(ctx context.Context, servic
 }
 
 func (m Management) resolveProtoManager(ctx context.Context) ProtoManager {
-	meta := FromContext(ctx)
+	meta, ok := metadata.FromContext(ctx)
+	if !ok {
+		return m.protoManager
+	}
 	if meta.ProtoRevision == "" {
 		return m.protoManager
 	}
@@ -186,7 +191,7 @@ func (m Management) resolveProtoManager(ctx context.Context) ProtoManager {
 		logrus.Warnf("Proto manager %T does not support revision management", m.protoManager)
 		return m.protoManager
 	}
-	pm, err := rm.Resolve(ctx, meta.ProtoRevision)
+	pm, err := rm.ResolveRevision(ctx, meta.ProtoRevision)
 	if err != nil {
 		logrus.Warnf("Failed to resolve proto manager on revision: %s: %+v", meta.ProtoRevision, err)
 		return m.protoManager
@@ -205,6 +210,18 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 		PackageName:       fileProfile.ProtoPackage.FileDescriptor.GetFullyQualifiedName(),
 		PreferTarget:      serviceIdentifier,
 		ProtoFiles:        m.allProtoFiles(ctx),
+		InvokePageURLBuilder: func(pf *ProtoFileMeta) string {
+			dst := fmt.Sprintf("/management/invoke/%s", pf.Meta.ImportPath)
+			q := url.Values{}
+			meta, _ := metadata.FromContext(ctx)
+			if meta.ProtoRevision != "" {
+				q.Set("protoRevison", meta.ProtoRevision)
+			}
+			if len(q) > 0 {
+				dst = fmt.Sprintf("%s?%s", dst, q.Encode())
+			}
+			return dst
+		},
 	}
 	preferTarget, ok := fileProfile.Common.Annotation[AppBerrypostManagementInvokePreferTarget]
 	if ok {
@@ -255,7 +272,13 @@ func (m Management) firstServiceAlias(ctx context.Context) string {
 
 func (m Management) redirectToFirstService(ctx *gin.Context) {
 	serviceIdentifier := m.firstServiceAlias(ctx)
-	ctx.Redirect(http.StatusTemporaryRedirect, path.Join("/management/invoke", serviceIdentifier))
+	meta, _ := metadata.FromContext(ctx)
+
+	dst := path.Join("/management/invoke", serviceIdentifier)
+	p := url.Values{}
+	p.Set("protoRevision", meta.ProtoRevision)
+	dst = fmt.Sprintf("%s?%s", dst, p.Encode())
+	ctx.Redirect(http.StatusTemporaryRedirect, dst)
 }
 
 func (m Management) allProtoFiles(ctx context.Context) []*ProtoFileMeta {
@@ -285,21 +308,11 @@ func (m Management) emptyInvoke(ctx *gin.Context) {
 	})
 }
 
-type Metadata struct {
-	ProtoRevision string
-}
-
-const MetadataKey = "management-meta"
-
 func (m Management) prepareMetadata(ctx *gin.Context) {
-	meta := Metadata{
+	meta := metadata.Metadata{
 		ProtoRevision: ctx.Query("protoRevision"),
 	}
-	ctx.Set(MetadataKey, meta)
-}
-
-func FromContext(ctx context.Context) Metadata {
-	return ctx.Value(MetadataKey).(Metadata)
+	ctx.Set(metadata.ContextKey, meta)
 }
 
 func (m Management) Setup(s *server.Server) error {

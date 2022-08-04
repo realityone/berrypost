@@ -18,7 +18,7 @@ type ProtoManager interface {
 }
 
 type RevisionManager interface {
-	Resolve(context.Context, string) (ProtoManager, error)
+	ResolveRevision(context.Context, string) (ProtoManager, error)
 }
 
 type ProtoFileMeta struct {
