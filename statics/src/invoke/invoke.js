@@ -152,6 +152,25 @@ var serviceMenuLiveSearch = function() {
     });
 };
 
+
+var refMenuLiveSearch = function() {
+    const searchInput = document.getElementById("refMenuSearch");
+    searchInput.addEventListener('keyup', () => {
+        const filter = searchInput.value;
+        const refMenuContent = document.getElementById("refMenuContent");
+        const links = refMenuContent.getElementsByTagName("a");
+        for (const a of links) {
+            const txtValue = a.textContent || a.innerText;
+            if (txtValue.indexOf(filter) > -1) {
+                a.style.display = "";
+                continue;
+            }
+            a.style.display = "none";
+        }
+    });
+};
+
+
 var metadataHeaderArgs = function(metadataTable) {
     var args = [""];
     for (const row of Array.from(metadataTable.rows).slice(1)) {
@@ -237,3 +256,4 @@ window.addEventListener('load', setupClickSend);
 window.addEventListener('load', serviceMenuLiveSearch);
 window.addEventListener('load', clickFirstMethod);
 window.addEventListener('load', setupRequestEditor);
+window.addEventListener('load', refMenuLiveSearch);

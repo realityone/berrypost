@@ -19,6 +19,11 @@ type ProtoManager interface {
 
 type RevisionManager interface {
 	ResolveRevision(context.Context, string) (ProtoManager, error)
+	ListKnownReferences(context.Context) ([]*ReferenceItem, error)
+}
+
+type ReferenceItem struct {
+	Name string
 }
 
 type ProtoFileMeta struct {

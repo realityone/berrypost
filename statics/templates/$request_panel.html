@@ -43,7 +43,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {{range $_, $i := .DefaultMetadata}}
+                            {{range $_, $i := .DefaultGRPCMetadata}}
                             <tr>
                                 <td><input type="checkbox" name="enable" checked disabled></td>
                                 <td><input type="text" value="{{ $i.Key }}" name="name" class="border-0 border-bottom" disabled></td>

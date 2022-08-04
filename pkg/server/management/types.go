@@ -1,6 +1,7 @@
 package management
 
 import (
+	"github.com/realityone/berrypost/pkg/metadata"
 	"github.com/realityone/berrypost/pkg/server"
 )
 
@@ -28,6 +29,8 @@ type InvokePage struct {
 	PreferTarget         string
 	Services             []*Service
 	ProtoFiles           []*ProtoFileMeta
-	InvokePageURLBuilder func(*ProtoFileMeta) string
-	DefaultMetadata      []*MetadataItem
+	InvokePageURLBuilder func(string, string) string
+	DefaultGRPCMetadata  []*MetadataItem
+	Metadata             metadata.Metadata
+	KnownReferences      []*ReferenceItem
 }

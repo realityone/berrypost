@@ -199,38 +199,51 @@ func (m Management) resolveProtoManager(ctx context.Context) ProtoManager {
 	return pm
 }
 
+func (m Management) listKnownReferences(ctx context.Context) []*ReferenceItem {
+	rm, ok := m.protoManager.(RevisionManager)
+	if !ok {
+		logrus.Warnf("Proto manager %T does not support revision management", m.protoManager)
+		return nil
+	}
+	refs, err := rm.ListKnownReferences(ctx)
+	if err != nil {
+		logrus.Errorf("Failed to list known references: %+v", err)
+		return nil
+	}
+	return refs
+}
+
 func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string) (*InvokePage, error) {
 	fileProfile, ok := m.findProtoFileByServiceIdentifier(ctx, serviceIdentifier)
 	if !ok {
 		return nil, errors.Errorf("Failed to find package profile from service identifier: %q", serviceIdentifier)
 	}
+	meta, _ := metadata.FromContext(ctx)
 	page := &InvokePage{
 		Meta:              m.server.Meta(),
 		ServiceIdentifier: serviceIdentifier,
 		PackageName:       fileProfile.ProtoPackage.FileDescriptor.GetFullyQualifiedName(),
 		PreferTarget:      serviceIdentifier,
 		ProtoFiles:        m.allProtoFiles(ctx),
-		InvokePageURLBuilder: func(pf *ProtoFileMeta) string {
-			dst := fmt.Sprintf("/management/invoke/%s", pf.Meta.ImportPath)
+		InvokePageURLBuilder: func(serviceIdentifier, protoRevision string) string {
+			dst := fmt.Sprintf("/management/invoke/%s", serviceIdentifier)
 			q := url.Values{}
-			meta, _ := metadata.FromContext(ctx)
-			if meta.ProtoRevision != "" {
-				q.Set("protoRevison", meta.ProtoRevision)
+			if protoRevision != "" {
+				q.Set("protoRevision", protoRevision)
 			}
 			if len(q) > 0 {
 				dst = fmt.Sprintf("%s?%s", dst, q.Encode())
 			}
 			return dst
 		},
+		Metadata:        meta,
+		KnownReferences: m.listKnownReferences(ctx),
 	}
-	meta, ok := metadata.FromContext(ctx)
-	if ok {
-		if meta.ProtoRevision != "" {
-			page.DefaultMetadata = append(page.DefaultMetadata, &MetadataItem{
-				Key:   metadata.ProtoRevisionGRPCMetadataKey,
-				Value: meta.ProtoRevision,
-			})
-		}
+	if meta.ProtoRevision != "" {
+		page.DefaultGRPCMetadata = append(page.DefaultGRPCMetadata, &MetadataItem{
+			Key:   metadata.ProtoRevisionGRPCMetadataKey,
+			Value: meta.ProtoRevision,
+		})
 	}
 
 	preferTarget, ok := fileProfile.Common.Annotation[AppBerrypostManagementInvokePreferTarget]
