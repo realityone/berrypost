@@ -15,6 +15,7 @@ import (
 	"github.com/realityone/berrypost/pkg/metadata"
 	"github.com/realityone/berrypost/pkg/server"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"k8s.io/kube-openapi/pkg/util/sets"
 )
 
@@ -213,6 +214,14 @@ func (m Management) listKnownReferences(ctx context.Context) []*ReferenceItem {
 	return refs
 }
 
+func initializeMessageField(in *dynamic.Message) {
+	for _, f := range in.GetKnownFields() {
+		if f.GetType() == descriptorpb.FieldDescriptorProto_TYPE_MESSAGE {
+			in.SetField(f, dynamic.NewMessage(f.GetMessageType()))
+		}
+	}
+}
+
 func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string) (*InvokePage, error) {
 	fileProfile, ok := m.findProtoFileByServiceIdentifier(ctx, serviceIdentifier)
 	if !ok {
@@ -267,7 +276,9 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 				EmitDefaults: true,
 				Indent:       "    ",
 			}
-			inputSchema, err := descMarshaler.MarshalToString(dynamic.NewMessage(m.GetInputType()))
+			dm := dynamic.NewMessage(m.GetInputType())
+			initializeMessageField(dm)
+			inputSchema, err := descMarshaler.MarshalToString(dm)
 			if err != nil {
 				logrus.Warn("Failed to marshal method: %q input type as string: %+v", m.GetFullyQualifiedName(), err)
 			}
