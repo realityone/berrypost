@@ -260,7 +260,7 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 	}
 	page.DefaultGRPCMetadata = append(page.DefaultGRPCMetadata, &MetadataItem{
 		Key:   metadata.ProtoPathGRPCMetadataKey,
-		Value: serviceIdentifier,
+		Value: fileProfile.ProtoPackage.Meta.ImportPath,
 	})
 
 	preferTarget, ok := fileProfile.Common.Annotation[AppBerrypostManagementInvokePreferTarget]
