@@ -258,6 +258,10 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 			Value: meta.ProtoRevision,
 		})
 	}
+	page.DefaultGRPCMetadata = append(page.DefaultGRPCMetadata, &MetadataItem{
+		Key:   metadata.ProtoPathGRPCMetadataKey,
+		Value: serviceIdentifier,
+	})
 
 	preferTarget, ok := fileProfile.Common.Annotation[AppBerrypostManagementInvokePreferTarget]
 	if ok {
@@ -349,6 +353,7 @@ func (m Management) emptyInvoke(ctx *gin.Context) {
 func (m Management) prepareBuiltinMetadata(ctx *gin.Context) {
 	meta := metadata.Metadata{
 		ProtoRevision: ctx.Query("protoRevision"),
+		ProtoPath:     ctx.Query("protoPath"),
 	}
 	ctx.Set(metadata.ContextKey, meta)
 }

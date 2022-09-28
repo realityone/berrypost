@@ -197,6 +197,9 @@ func (ps *ProxyServer) prepareBuiltinMetadata(ctx context.Context) context.Conte
 		if vs := md.Get(metadata.ProtoRevisionGRPCMetadataKey); len(vs) > 0 {
 			meta.ProtoRevision = vs[0]
 		}
+		if vs := md.Get(metadata.ProtoPathGRPCMetadataKey); len(vs) > 0 {
+			meta.ProtoPath = vs[0]
+		}
 		return meta, true
 	}
 
