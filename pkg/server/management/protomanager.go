@@ -55,7 +55,6 @@ type PackageMeta struct {
 }
 
 type ProtoMeta struct {
-	ProtoPath  string `json:"proto_path"`
 	ImportPath string `json:"import_path"`
 }
 
