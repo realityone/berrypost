@@ -10,12 +10,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/jhump/protoreflect/dynamic"
 	"github.com/pkg/errors"
 	"github.com/realityone/berrypost/pkg/metadata"
 	"github.com/realityone/berrypost/pkg/server"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/dynamicpb"
 	"k8s.io/kube-openapi/pkg/util/sets"
 )
 
@@ -90,7 +90,7 @@ func (m Management) listServiceAlias(ctx *gin.Context) {
 func (m Management) findProtoFileByServiceIdentifier(ctx context.Context, serviceIdentifier string) (*ProtoFileProfile, bool) {
 	files, err := m.resolveProtoManager(ctx).ListProtoFiles(ctx)
 	if err != nil {
-		logrus.Error("Failed to list proto files: %+v", err)
+		logrus.Errorf("Failed to list proto files: %+v", err)
 	}
 
 	fromProtoImportPath := func() (string, bool, error) {
@@ -159,7 +159,7 @@ func (m Management) findProtoFileByServiceIdentifier(ctx context.Context, servic
 	} {
 		importPath, ok, err := fn()
 		if err != nil {
-			logrus.Error("Failed to find proto import: %+v", err)
+			logrus.Errorf("Failed to find proto import: %+v", err)
 			continue
 		}
 		if !ok {
@@ -170,7 +170,7 @@ func (m Management) findProtoFileByServiceIdentifier(ctx context.Context, servic
 			ImportPath: importPath,
 		})
 		if err != nil {
-			logrus.Error("Failed to get proto file by import path: %q: %+v", importPath, err)
+			logrus.Errorf("Failed to get proto file by import path: %q: %+v", importPath, err)
 			continue
 		}
 		return profile, ok
@@ -214,15 +214,17 @@ func (m Management) listKnownReferences(ctx context.Context) []*ReferenceItem {
 	return refs
 }
 
-func initializeMessageField(in *dynamic.Message) {
-	for _, f := range in.GetKnownFields() {
-		if f.GetType() != descriptorpb.FieldDescriptorProto_TYPE_MESSAGE {
+func initializeMessageField(in *dynamicpb.Message) {
+	fields := in.Descriptor().Fields()
+	for i := 0; i < fields.Len(); i++ {
+		f := fields.Get(i)
+		if f.Kind() != protoreflect.MessageKind {
 			continue
 		}
-		if f.IsRepeated() {
+		if f.IsList() {
 			continue
 		}
-		in.SetField(f, dynamic.NewMessage(f.GetMessageType()))
+		in.Set(f, in.NewField(f))
 	}
 }
 
@@ -235,8 +237,8 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 	page := &InvokePage{
 		Meta:              m.server.Meta(),
 		ServiceIdentifier: serviceIdentifier,
-		PackageName:       fileProfile.ProtoPackage.FileDescriptor.GetFullyQualifiedName(),
-		PreferTarget:      serviceIdentifier,
+		PackageName:       fileProfile.ProtoPackage.Meta.ImportPath,
+		PreferTarget:      "",
 		ProtoFiles:        m.allProtoFiles(ctx),
 		InvokePageURLBuilder: func(serviceIdentifier, protoRevision string) string {
 			dst := fmt.Sprintf("/management/invoke/%s", serviceIdentifier)
@@ -268,32 +270,43 @@ func (m Management) makeInvokePage(ctx context.Context, serviceIdentifier string
 		page.PreferTarget = preferTarget
 	}
 
-	page.Services = make([]*Service, 0, len(fileProfile.ProtoPackage.FileDescriptor.GetServices()))
-	for _, s := range fileProfile.ProtoPackage.FileDescriptor.GetServices() {
-		ps := &Service{
-			Name: s.GetName(),
+	page.Services = []*Service{}
+	for _, path := range fileProfile.ProtoPackage.Files {
+		fd, err := fileProfile.ProtoPackage.FileDescriptor.FindFileByPath(path)
+		if err != nil {
+			logrus.Warnf("Failed to find file descriptor by path: %q: %+v", path, err)
+			continue
 		}
-		ps.Methods = make([]*Method, 0, len(s.GetMethods()))
-		for _, m := range s.GetMethods() {
-			pm := &Method{
-				Name:           m.GetName(),
-				GRPCMethodName: fmt.Sprintf("/%s/%s", s.GetFullyQualifiedName(), m.GetName()),
-				ServiceMethod:  fmt.Sprintf("%s.%s", s.GetName(), m.GetName()),
+		services := fd.Services()
+		for i := 0; i < services.Len(); i++ {
+			s := services.Get(i)
+			ps := &Service{
+				Name: string(s.Name()),
 			}
-			descMarshaler := jsonpb.Marshaler{
-				EmitDefaults: true,
-				Indent:       "    ",
+			methods := s.Methods()
+			ps.Methods = make([]*Method, 0, methods.Len())
+			for j := 0; j < methods.Len(); j++ {
+				m := methods.Get(j)
+				pm := &Method{
+					Name:           string(m.Name()),
+					GRPCMethodName: fmt.Sprintf("/%s/%s", s.FullName(), string(m.Name())),
+					ServiceMethod:  fmt.Sprintf("%s.%s", s.Name(), string(m.Name())),
+				}
+				descMarshaler := jsonpb.Marshaler{
+					EmitDefaults: true,
+					Indent:       "    ",
+				}
+				dm := dynamicpb.NewMessage(m.Input())
+				initializeMessageField(dm)
+				inputSchema, err := descMarshaler.MarshalToString(dm)
+				if err != nil {
+					logrus.Warn("Failed to marshal method: %q input type as string: %+v", m.FullName(), err)
+				}
+				pm.InputSchema = inputSchema
+				ps.Methods = append(ps.Methods, pm)
 			}
-			dm := dynamic.NewMessage(m.GetInputType())
-			initializeMessageField(dm)
-			inputSchema, err := descMarshaler.MarshalToString(dm)
-			if err != nil {
-				logrus.Warn("Failed to marshal method: %q input type as string: %+v", m.GetFullyQualifiedName(), err)
-			}
-			pm.InputSchema = inputSchema
-			ps.Methods = append(ps.Methods, pm)
+			page.Services = append(page.Services, ps)
 		}
-		page.Services = append(page.Services, ps)
 	}
 
 	return page, nil
@@ -344,10 +357,14 @@ func (m Management) invoke(ctx *gin.Context) {
 }
 
 func (m Management) emptyInvoke(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "invoke.html", &InvokePage{
-		Meta:       m.server.Meta(),
-		ProtoFiles: m.allProtoFiles(ctx),
-	})
+	serviceIdentifier := "buf.bilibili.co/archive/service"
+	serviceIdentifier = strings.TrimPrefix(serviceIdentifier, "/")
+	page, err := m.makeInvokePage(ctx, serviceIdentifier)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	ctx.HTML(http.StatusOK, "invoke.html", page)
 }
 
 func (m Management) prepareBuiltinMetadata(ctx *gin.Context) {
