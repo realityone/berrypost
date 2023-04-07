@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/jhump/protoreflect/desc"
-	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
 type ProtoManager interface {
@@ -65,7 +63,8 @@ type ProtoPackageProfile struct {
 
 type ProtoPackage struct {
 	Meta           ProtoMeta            `json:"meta"`
-	FileDescriptor *desc.FileDescriptor `json:"file_descriptor"`
+	Files          []string             `json:"files"`
+	FileDescriptor *protoregistry.Files `json:"file_descriptor"`
 }
 
 func (pp *ProtoPackage) MarshalJSON() ([]byte, error) {
@@ -76,12 +75,12 @@ func (pp *ProtoPackage) MarshalJSON() ([]byte, error) {
 		Meta: pp.Meta,
 	}
 
-	descMarshaler := jsonpb.Marshaler{}
-	descString, err := descMarshaler.MarshalToString(pp.FileDescriptor.AsProto())
-	if err != nil {
-		logrus.Warnf("Failed to marshal %+v as json string: %+v", err)
-	}
-	marshalStruct.FileDescriptor = json.RawMessage(descString)
+	// descMarshaler := jsonpb.Marshaler{}
+	// descString, err := descMarshaler.MarshalToString(pp.FileDescriptor)
+	// if err != nil {
+	// 	logrus.Warnf("Failed to marshal %+v as json string: %+v", err)
+	// }
+	// marshalStruct.FileDescriptor = json.RawMessage(descString)
 
 	return json.Marshal(marshalStruct)
 }

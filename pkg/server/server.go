@@ -88,8 +88,8 @@ func (s *Server) Serve() {
 	srv := &http.Server{
 		Handler:      s,
 		Addr:         "0.0.0.0:8000",
-		WriteTimeout: 1 * time.Second,
-		ReadTimeout:  1 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		ReadTimeout:  30 * time.Second,
 	}
 	logrus.Infof("Starting server listen and serve at: %s...", srv.Addr)
 	logrus.Fatal(srv.ListenAndServe())
