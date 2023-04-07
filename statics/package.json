@@ -19,6 +19,7 @@
     },
     "dependencies": {
         "@fontsource/source-sans-pro": "^4.5.0",
+        "@popperjs/core": "^2.11.7",
         "bootstrap": "^5.0.2",
         "bootstrap-icons": "^1.5.0",
         "codemirror": "^5.62.2",
