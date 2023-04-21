@@ -8,6 +8,7 @@ import (
 	"github.com/realityone/berrypost"
 	"github.com/realityone/berrypost/pkg/server/contrib/cacheablefs"
 
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -70,6 +71,7 @@ func New(opts ...Option) *Server {
 	}
 
 	engine := gin.New()
+	pprof.Register(engine)
 	engine.Use(cfg.GinMiddlewares...)
 	server := &Server{
 		Engine:     engine,
